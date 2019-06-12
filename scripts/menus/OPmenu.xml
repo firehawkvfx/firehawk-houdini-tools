@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<menuDocument>
+    <menu>
+        <scriptItem id="opmenu.save_as_new_version">
+            <insertAfter>opmenu.saveoptype</insertAfter>
+            <label>Save as New Version</label>
+            <context>
+            <expression>
+<![CDATA[
+node = kwargs["node"]
+if node.matchesCurrentDefinition():
+    return False
+if not node.isNetwork():
+    return False
+hda_def = node.type().definition()
+if not hda_def:
+    return False
+    
+options = hda_def.options()
+if not options.lockContents():
+    return False
+if node.isInsideLockedHDA() and not node.isEditableInsideLockedHDA():
+    return False
+if hou.hda.safeguardHDAs():
+    return False
+if not node.type().isWritable():
+    return False
+if not node.type().areContentsViewable():
+    return False
+return True
+]]>
+            </expression>
+	    </context>
+            <scriptCode>
+<![CDATA[
+# unlocked node
+unlocked_node = kwargs["node"]
+unlocked_def = unlocked_node.type().definition()
+current_name = unlocked_node.type().name()
+# disk path of asset
+asset_path = unlocked_def.libraryFilePath()
+# get new name and save a new version
+choice, new_name = hou.ui.readInput(message="Please enter new node name", title="New name", buttons=("OK", "Cancel"), close_choice=1, initial_contents=current_name)
+if choice == 0:
+    node_type_category = unlocked_node.type().category()
+    unlocked_def.copyToHDAFile(asset_path, new_name=new_name)
+    # get definition of new version and update from unlocked node
+    new_type = hou.nodeType(node_type_category, new_name)
+    new_def = new_type.definition()
+    new_def.updateFromNode(unlocked_node)
+    # change unlocked node to the new definition and match current definition
+    unlocked_node = unlocked_node.changeNodeType(new_name)
+    unlocked_node.matchCurrentDefinition()
+]]>
+            </scriptCode>
+        </scriptItem>
+    </menu>
+</menuDocument>

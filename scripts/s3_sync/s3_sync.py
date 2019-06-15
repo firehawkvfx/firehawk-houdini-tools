@@ -31,6 +31,8 @@ class syncfile():
     self.s3_args = []
 
     self.force = False
+    self.quiet = False
+    self.ignore_errors = False
     self.pushed = False
     self.pulled = False
 
@@ -44,11 +46,11 @@ class syncfile():
         os.environ.update(self.env)
 
         # Run awscli in the same process
-        exit_code = create_clidriver().main(*cmd)
+        self.exit_code = create_clidriver().main(*cmd)
 
         # Deal with problems
-        if exit_code > 0:
-            raise RuntimeError('AWS CLI exited with code {}'.format(exit_code))
+        if (self.exit_code > 0) and (not self.ignore_errors) and (self.exit_code != 2):
+            raise RuntimeError('AWS CLI exited with code {}'.format(self.exit_code))
     finally:
         os.environ.clear()
         os.environ.update(self.old_env)
@@ -61,6 +63,9 @@ class syncfile():
         # upload to s3 with boto is prefereable to the cli.  However the cli proivdes the sync function below which will only transfer if the files don't match which is a better default behaviour.
       else:
         self.s3_args = ['s3', 'sync', self.dirname, self.bucketdirname, '--exclude', '*', '--include', self.filename]
+        if self.quiet:
+          self.s3_args.append('--quiet')
+
         print 'args', self.s3_args
         self.cli_operation = self.aws_cli( self.s3_args )
         #print self.cli_operation
@@ -73,6 +78,9 @@ class syncfile():
         self.s3_client_result = self.s3_client.download_file(self.bucketname, self.fullpath, self.fullpath)
       else:
         self.s3_args = ['s3', 'sync', self.bucketdirname, self.dirname, '--exclude', '*', '--include', self.filename]
+        if self.quiet:
+          self.s3_args.append('--quiet')
+
         print 'args', self.s3_args
         self.cli_operation = self.aws_cli( self.s3_args )
         #print self.cli_operation

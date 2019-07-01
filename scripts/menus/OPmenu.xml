@@ -2,6 +2,42 @@
 
 <menuDocument>
     <menu>
+        <scriptItem id="opmenu.update_rop_output_paths_for_selected_nodes">
+        <label>Update Rop Output Paths for Selected SOP/TOP Nodes</label>
+        <scriptPath>$FIREHAWK_HOUDINI_TOOLS/scripts/menus/update_rop_output.py</scriptPath>
+        </scriptItem>
+    </menu>
+    <menu>
+        <scriptItem id="opmenu.dirty_node_and_cloud_submit">
+        <label>Dirty Node and Cloud Submit</label>
+        <!-- <scriptPath>$FIREHAWK_HOUDINI_TOOLS/scripts/menus/cloud_submit.py</scriptPath> -->
+        <!-- <scriptArgs>
+<![CDATA[
+node = kwargs["node"]
+arguments = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+return node
+]]>
+        </scriptArgs> -->
+        <scriptCode>
+<![CDATA[
+arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+# hou.ui.displayMessage('My Action with kwargs:\n  ' + arguments)
+
+import sys
+
+sys.path.append('/prod/asset/openfirehawk-houdini-tools/scripts/menus/cloud_submit.py')
+
+import cloud_submit as cloud_submit
+
+node = kwargs["node"]
+
+cloud_submit.submit(node)
+]]>
+        </scriptCode>
+        </scriptItem>
+    </menu>
+    # Below contributions for otl versioning by Juraj Tomori https://github.com/jtomori
+    <menu>
         <scriptItem id="opmenu.save_as_new_version">
             <insertAfter>opmenu.saveoptype</insertAfter>
             <label>Save as New Version</label>

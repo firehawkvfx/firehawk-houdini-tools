@@ -31,7 +31,7 @@ import cloud_submit as cloud_submit
 
 node = kwargs["node"]
 
-cloud_submit.submit(node)
+cloud_submit.submit(node).cook()
 ]]>
         </scriptCode>
         </scriptItem>

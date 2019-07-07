@@ -118,26 +118,26 @@ import errno
 class submit():
   def __init__(self, node=''):
     self.node = node
-    print "Submit", node.path()
+    print "Submit", self.node.path()
 
     if hasattr(node.getPDGNode(), 'dirty'):
-      node.getPDGNode().dirty(True)
+      self.node.getPDGNode().dirty(True)
 
     self.hip_path = hou.hipFile.path()
     hou.hipFile.save(self.hip_path)
 
-    self.hip_path_cloud = re.sub('^\/prod\/?', '/tmp/', self.hip_path)
-    print "Source hip", self.hip_path
+    # self.hip_path_cloud = re.sub('^\/prod\/?', '/tmp/', self.hip_path)
+    # print "Source hip", self.hip_path
     
-    print "Copy hip file to", self.hip_path_cloud
+    # print "Copy hip file to", self.hip_path_cloud
     
     # ensure path exists to write
-    if not os.path.exists(os.path.dirname(self.hip_path_cloud)):
-        try:
-            os.makedirs(os.path.dirname(self.hip_path_cloud))
-        except OSError as exc: # Guard against race condition
-            if exc.errno != errno.EEXIST:
-                raise
+    # if not os.path.exists(os.path.dirname(self.hip_path_cloud)):
+    #     try:
+    #         os.makedirs(os.path.dirname(self.hip_path_cloud))
+    #     except OSError as exc: # Guard against race condition
+    #         if exc.errno != errno.EEXIST:
+    #             raise
 
     # copy(self.hip_path, self.hip_path_cloud, progress)
 
@@ -151,13 +151,14 @@ class submit():
     # self.dest_file.close()
 
     #subprocess.call(["rsync", "-avzh", "DJStatic", "username@website"])
+    def assign_preflight(self):
+      print "assign preflight node", self.node.path()
 
-
-
-    node.getPDGNode().cook(True)
-    if hasattr(node.getPDGNode(), 'cook'):
+    def cook(self):
       node.getPDGNode().cook(True)
-    else:
-      hou.ui.displayMessage("Failed to cook, try initiliasing the node first with a standard cook / generate.")
+      if hasattr(node.getPDGNode(), 'cook'):
+        node.getPDGNode().cook(True)
+      else:
+        hou.ui.displayMessage("Failed to cook, try initiliasing the node first with a standard cook / generate.")
 
     #def local_push(self):

@@ -7,6 +7,34 @@
         <scriptPath>$FIREHAWK_HOUDINI_TOOLS/scripts/menus/update_rop_output.py</scriptPath>
         </scriptItem>
     </menu>
+    # Assign node as preflight
+    <menu>
+        <scriptItem id="opmenu.assign_node_as_preflight">
+        <label>Assign node as preflight</label>
+        <!-- <scriptPath>$FIREHAWK_HOUDINI_TOOLS/scripts/menus/cloud_submit.py</scriptPath> -->
+        <!-- <scriptArgs>
+<![CDATA[
+node = kwargs["node"]
+arguments = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+return node
+]]>
+        </scriptArgs> -->
+        <scriptCode>
+<![CDATA[
+import sys
+sys.path.append('/prod/asset/openfirehawk-houdini-tools/scripts/menus/cloud_submit.py')
+import cloud_submit as cloud_submit
+
+arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+
+node = kwargs["node"]
+
+cloud_submit.submit(node).assign_preflight()
+]]>
+        </scriptCode>
+        </scriptItem>
+    </menu>
+    ### Dirty Node and Cloud Submit ###
     <menu>
         <scriptItem id="opmenu.dirty_node_and_cloud_submit">
         <label>Dirty Node and Cloud Submit</label>

@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-
 import hou
 import sys
 import re
@@ -151,14 +150,14 @@ class submit():
     # self.dest_file.close()
 
     #subprocess.call(["rsync", "-avzh", "DJStatic", "username@website"])
-    def assign_preflight(self):
-      print "assign preflight node", self.node.path()
+  def assign_preflight(self):
+    print "assign preflight node", self.node.path()
 
-    def cook(self):
+  def cook(self):
+    node.getPDGNode().cook(True)
+    if hasattr(node.getPDGNode(), 'cook'):
       node.getPDGNode().cook(True)
-      if hasattr(node.getPDGNode(), 'cook'):
-        node.getPDGNode().cook(True)
-      else:
-        hou.ui.displayMessage("Failed to cook, try initiliasing the node first with a standard cook / generate.")
+    else:
+      hou.ui.displayMessage("Failed to cook, try initiliasing the node first with a standard cook / generate.")
 
     #def local_push(self):

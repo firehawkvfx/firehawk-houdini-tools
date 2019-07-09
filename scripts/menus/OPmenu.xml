@@ -1,32 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <menuDocument>
+    # Update Rop Output Paths for Selected SOP/TOP Nodes
     <menu>
         <scriptItem id="opmenu.update_rop_output_paths_for_selected_nodes">
         <label>Update Rop Output Paths for Selected SOP/TOP Nodes</label>
-        <scriptPath>$FIREHAWK_HOUDINI_TOOLS/scripts/menus/update_rop_output.py</scriptPath>
+        <scriptCode>
+<![CDATA[
+
+import sys
+
+import os
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+sys.path.append(menu_path)
+
+import cloud_submit as cloud_submit
+
+arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+node = kwargs["node"]
+
+cloud_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs)
+]]>
+        </scriptCode>
         </scriptItem>
     </menu>
     # Assign node as preflight
     <menu>
-        <scriptItem id="opmenu.assign_node_as_preflight">
-        <label>Assign node as preflight</label>
-        <!-- <scriptPath>$FIREHAWK_HOUDINI_TOOLS/scripts/menus/cloud_submit.py</scriptPath> -->
-        <!-- <scriptArgs>
-<![CDATA[
-node = kwargs["node"]
-arguments = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
-return node
-]]>
-        </scriptArgs> -->
+        <scriptItem id="opmenu.assign_node_for_topnet_preflight">
+        <label>Assign Node For TOPNET Preflight</label>
         <scriptCode>
 <![CDATA[
+print "Assign Node For TOPNET Preflight"
 import sys
-sys.path.append('/prod/asset/openfirehawk-houdini-tools/scripts/menus/cloud_submit.py')
+
+import os
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+sys.path.append(menu_path)
+
 import cloud_submit as cloud_submit
 
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
-
 node = kwargs["node"]
 
 cloud_submit.submit(node).assign_preflight()
@@ -34,18 +47,33 @@ cloud_submit.submit(node).assign_preflight()
         </scriptCode>
         </scriptItem>
     </menu>
-    ### Dirty Node and Cloud Submit ###
+    ### Dirty Upstream Source Nodes ###
     <menu>
-        <scriptItem id="opmenu.dirty_node_and_cloud_submit">
-        <label>Dirty Node and Cloud Submit</label>
-        <!-- <scriptPath>$FIREHAWK_HOUDINI_TOOLS/scripts/menus/cloud_submit.py</scriptPath> -->
-        <!-- <scriptArgs>
+        <scriptItem id="opmenu.dirty_upstream_source_nodes">
+        <label>Dirty Upstream Source Nodes</label>
+        <scriptCode>
 <![CDATA[
+arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+
+import sys
+
+import os
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+sys.path.append(menu_path)
+
+import cloud_submit as cloud_submit
+
 node = kwargs["node"]
-arguments = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
-return node
+
+cloud_submit.submit(node).dirty_upstream_source_nodes()
 ]]>
-        </scriptArgs> -->
+        </scriptCode>
+        </scriptItem>
+    </menu>
+    ### Submit With Preflight ###
+    <menu>
+        <scriptItem id="opmenu.submit_with_preflight">
+        <label>Submit With Preflight</label>
         <scriptCode>
 <![CDATA[
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
@@ -53,7 +81,9 @@ arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 
 import sys
 
-sys.path.append('/prod/asset/openfirehawk-houdini-tools/scripts/menus/cloud_submit.py')
+import os
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+sys.path.append(menu_path)
 
 import cloud_submit as cloud_submit
 

@@ -18,10 +18,13 @@ class submit():
     self.pdg_node = ''
     self.parent = self.node.parent()
 
-    self.preflight = None
+    self.preflight_node = None
     self.preflight_path = None
     self.parm_group = None
     self.found_folder = None
+    self.graph_context = None
+
+    self.preflight_status = None
 
     self.hip_path = hou.hipFile.path()
 
@@ -77,29 +80,50 @@ class submit():
     if (self.parent.parmTuple("preflight_node") != None):
       self.preflight_path = self.parent.parm("preflight_node").eval()
       print "self.preflight_path", self.preflight_path
-      self.preflight = self.parent.node(self.preflight_path)
-      print "preflight node path is", self.preflight.path()
+      self.preflight_node = self.parent.node(self.preflight_path)
+      print "preflight node path is", self.preflight_node.path()
 
       ### save before preflight ###
       hou.hipFile.save(self.hip_path)
-      if self.preflight:
-        self.preflight.executeGraph(False, False, False, True)
+      if self.preflight_node:
+        ### refresh workitems on the preflight node ###
+        self.preflight_node.executeGraph(False, False, False, True)
 
-        if hasattr(self.preflight.getPDGNode(), 'cook'):
-          print "cooking preflight", self.preflight.path()
-          self.preflight.getPDGNode().cook(True)
+        if hasattr(self.preflight_node.getPDGNode(), 'cook'):
+          print "cooking preflight", self.preflight_node.path()
+          
+
+          def cook_done(event):
+            if self.preflight_status=='cooking':
+              print "event", event.node, event.message, dir(event)
+              self.preflight_status=='done'
+              ### remove handler since the main job is about to execute, and we dont need this anymore. ###
+              self.graph_context.removeEventHandler(self.handler)
+
+              ### save after preflight ###
+              hou.hipFile.save(self.hip_path)
+              ### refresh workitems for main job node ###
+              self.node.executeGraph(False, False, False, True)
+
+              if hasattr(self.node.getPDGNode(), 'cook'):
+                self.node.getPDGNode().cook(False)
+              else:
+                hou.ui.displayMessage("Failed to cook, try initiliasing the node first with a standard cook / generate.")
+            else:
+              print 'error preflight_status is not "cooking", this function should not be called', self.preflight_status
+
+          ### setup handler before executing preflight ###
+          self.graph_context = self.preflight_node.getPDGGraphContext()
+          self.handler = self.graph_context.addEventHandler(cook_done, pdg.EventType.CookComplete)
+          ### cook preflight ###
+          self.preflight_status='cooking'
+          self.preflight_node.getPDGNode().cook(False)
+
         else:
-          print "dir(self.preflight.getPDGNode())", dir(self.preflight.getPDGNode())
+          print "dir(self.preflight_node.getPDGNode())", dir(self.preflight_node.getPDGNode())
           hou.ui.displayMessage("Preflight Failed to cook: Node wasn't initialised / cook method not available on this node.")
     
-    ### save after preflight ###
-    hou.hipFile.save(self.hip_path)
-    self.node.executeGraph(False, False, False, True)
 
-    if hasattr(self.node.getPDGNode(), 'cook'):
-      self.node.getPDGNode().cook(False)
-    else:
-      hou.ui.displayMessage("Failed to cook, try initiliasing the node first with a standard cook / generate.")
 
   def dirty_upstream_source_nodes(self):
     # this will generate the selected workitems

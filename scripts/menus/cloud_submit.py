@@ -275,12 +275,15 @@ class submit():
                     parm_folder.addParmTemplate(hou.IntParmTemplate("version_int", "Version", 1))
                     parm_folder.addParmTemplate(hou.StringParmTemplate("versionstr", "Version String", 1, [""]))
                     
-                    parm_folder.addParmTemplate(hou.StringParmTemplate("wedge_string", "Wedge String", 1, ["w0"]))
+                    parm_folder.addParmTemplate(hou.StringParmTemplate("wedge_string", "Wedge String", 1, ["w`@wedgenum`"]))
                     
                     parm_folder.addParmTemplate(hou.StringParmTemplate("output_type", "Output Type", 1, [lookup['type_path']]))
                     
                     parm_folder.addParmTemplate(hou.StringParmTemplate("shot", "Shot", 1, [shot_default]))
                     
+                    parm_folder.addParmTemplate(hou.MenuParmTemplate('location', 'Location', ("submission_location","cloud","onsite"), ("Submission Location","Cloud","Onsite"), default_value=0))
+                    #parm_folder.addParmTemplate(hou.MenuParmTemplate("location", "Location", menu_items=(["submission_location","cloud","onsite"]), menu_labels=(["Submission Location","Cloud","Onsite"]), default_value=0, icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal, menu_use_token=False, is_button_strip=False, strip_uses_icons=False)
+            
                     parm_folder.addParmTemplate(hou.StringParmTemplate("shot_path_template", "Shot Path Template", 1, ["${SHOTPATH}"]))
                     
                     parm_folder.addParmTemplate(hou.StringParmTemplate("shot_path", "Shot Path", 1, [shotpath_var]))
@@ -303,8 +306,28 @@ class submit():
                     hou_parm.lock(False)
                     hou_parm.setAutoscope(False)
                     hou_keyframe = hou.StringKeyframe()
-                    hou_keyframe.setTime(37.5)
+                    hou_keyframe.setTime(0)
                     hou_keyframe.setExpression("import hou"+'\n'+"version = \'v'+str(hou.pwd().parm(\'version_int\').eval()).zfill(3)"+'\n'+"return version", hou.exprLanguage.Python)
+                    hou_parm.setKeyframe(hou_keyframe)
+
+                    expr = \
+"""
+import hou
+node = hou.pwd()
+lookup = {'submission_location':'$PROD_ROOT', 'cloud':'$PROD_CLOUD_ROOT', 'onsite':'$PROD_ONSITE_ROOT'}
+location = node.parm('location').evalAsString()
+root = lookup[location]
+
+template = root+'/$SHOW/$SEQ/$SHOT'
+return template
+"""
+
+                    hou_parm = node.parm("shot_path_template")
+                    hou_parm.lock(False)
+                    hou_parm.setAutoscope(False)
+                    hou_keyframe = hou.StringKeyframe()
+                    hou_keyframe.setTime(0)
+                    hou_keyframe.setExpression(expr, hou.exprLanguage.Python)
                     hou_parm.setKeyframe(hou_keyframe)
                     
                     
@@ -317,7 +340,7 @@ class submit():
                     hou_parm.lock(False)
                     hou_parm.setAutoscope(False)
                     hou_keyframe = hou.StringKeyframe()
-                    hou_keyframe.setTime(37.5)
+                    hou_keyframe.setTime(0)
                     
                     if 'overrides' in lookup and 'frame' in lookup['overrides']:
                         print 'has override for static_expression'
@@ -333,7 +356,7 @@ class submit():
                 
                 element_name_template = node.parm("element_name_template").evalAsString()
                 try:
-                    shot_path_template = node.parm("shot_path_template").evalAsString()
+                    shot_path_template = hou.expandString( node.parm("shot_path_template").evalAsString() )
                     #element_name_template = node.parm("element_name_template").evalAsString()
                 except:
                     shot_path_template = shotpath_var

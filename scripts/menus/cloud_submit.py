@@ -8,6 +8,7 @@ import subprocess
 import os
 import errno
 import numpy as np
+import datetime
 
 #####
 
@@ -84,23 +85,25 @@ class submit():
       self.preflight_path = self.parent.parm("preflight_node").eval()
       print "self.preflight_path", self.preflight_path
       self.preflight_node = self.parent.node(self.preflight_path)
-      print "preflight node path is", self.preflight_node.path()
-
+      
       ### save before preflight ###
 
-      #timestamp_submission = True
+      timestamp_submission = True
 
-      # import datetime
-      # datetime_object = datetime.datetime.now()
-      # print(datetime_object)
-      # timestampStr = datetime_object.strftime("%Y-%m-%d.%H-%M-%S-%f")
-      # print('Current Timestamp : ', timestampStr)
+      self.submit_name = self.hip_path
 
-      # self.submit_name = "{dir}/{base}.{date}.hip".format(dir=self.hip_dirname, base=self.hip_basename, date=timestampStr)
+      if timestamp_submission:
+        datetime_object = datetime.datetime.now()
+        print(datetime_object)
+        timestampStr = datetime_object.strftime("%Y-%m-%d.%H-%M-%S-%f")
+        print('Current Timestamp : ', timestampStr)
 
-      hou.hipFile.save(self.hip_path)
+        self.submit_name = "{dir}/{base}.{date}.hip".format(dir=self.hip_dirname, base=self.hip_basename, date=timestampStr)
+
+      hou.hipFile.save(self.submit_name)
 
       if self.preflight_node:
+        print "preflight node path is", self.preflight_node.path()
         ### refresh workitems on the preflight node ###
         self.preflight_node.executeGraph(False, False, False, True)
 
@@ -116,16 +119,18 @@ class submit():
               self.graph_context.removeEventHandler(self.handler)
 
               ### save after preflight ###
-              hou.hipFile.save(self.hip_path)
+              hou.hipFile.save(self.submit_name)
               ### refresh workitems for main job node ###
               self.node.executeGraph(False, False, False, True)
 
               if hasattr(self.node.getPDGNode(), 'cook'):
+                ### cook main job ###
                 self.node.getPDGNode().cook(False)
               else:
                 hou.ui.displayMessage("Failed to cook, try initiliasing the node first with a standard cook / generate.")
-              # save again with original name.
-              #hou.hipFile.save(self.hip_path)
+              
+              # Save again with restored original name.
+              hou.hipFile.save(self.hip_path)
             else:
               print 'error preflight_status is not "cooking", this function should not be called', self.preflight_status
 

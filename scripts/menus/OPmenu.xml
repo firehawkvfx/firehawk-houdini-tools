@@ -73,7 +73,7 @@ cloud_submit.submit(node).dirty_upstream_source_nodes()
     ### Submit With Preflight ###
     <menu>
         <scriptItem id="opmenu.submit_with_preflight">
-        <label>Submit With Preflight</label>
+        <label>Cook (With Preflight If Available)</label>
         <scriptCode>
 <![CDATA[
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])

@@ -27,6 +27,9 @@ class submit():
     self.preflight_status = None
 
     self.hip_path = hou.hipFile.path()
+    self.hip_dirname = os.path.split(self.hip_path)[0]
+    self.hip_basename = hou.hipFile.basename().strip('.hip')
+    self.hip_path_submission = None
 
     self.source_top_nodes = []
     self.added_workitems = []
@@ -84,7 +87,19 @@ class submit():
       print "preflight node path is", self.preflight_node.path()
 
       ### save before preflight ###
+
+      #timestamp_submission = True
+
+      # import datetime
+      # datetime_object = datetime.datetime.now()
+      # print(datetime_object)
+      # timestampStr = datetime_object.strftime("%Y-%m-%d.%H-%M-%S-%f")
+      # print('Current Timestamp : ', timestampStr)
+
+      # self.submit_name = "{dir}/{base}.{date}.hip".format(dir=self.hip_dirname, base=self.hip_basename, date=timestampStr)
+
       hou.hipFile.save(self.hip_path)
+
       if self.preflight_node:
         ### refresh workitems on the preflight node ###
         self.preflight_node.executeGraph(False, False, False, True)
@@ -109,6 +124,8 @@ class submit():
                 self.node.getPDGNode().cook(False)
               else:
                 hou.ui.displayMessage("Failed to cook, try initiliasing the node first with a standard cook / generate.")
+              # save again with original name.
+              #hou.hipFile.save(self.hip_path)
             else:
               print 'error preflight_status is not "cooking", this function should not be called', self.preflight_status
 
@@ -122,6 +139,16 @@ class submit():
         else:
           print "dir(self.preflight_node.getPDGNode())", dir(self.preflight_node.getPDGNode())
           hou.ui.displayMessage("Preflight Failed to cook: Node wasn't initialised / cook method not available on this node.")
+      else:
+        # no preflight
+        self.node.executeGraph(False, False, False, True)
+        if hasattr(self.node.getPDGNode(), 'cook'):
+          self.node.getPDGNode().cook(False)
+        else:
+          hou.ui.displayMessage("Failed to cook, try initiliasing the node first with a standard cook / generate.")
+        # save again with original name.
+        hou.hipFile.save(self.hip_path)
+
     
 
 

@@ -113,7 +113,7 @@ class submit():
 
           def cook_done(event):
             if self.preflight_status=='cooking':
-              print "event", event.node, event.message, dir(event)
+              print "event", event.node, event.message
               self.preflight_status=='done'
               ### remove handler since the main job is about to execute, and we dont need this anymore. ###
               self.graph_context.removeEventHandler(self.handler)
@@ -142,7 +142,7 @@ class submit():
           self.preflight_node.getPDGNode().cook(False)
 
         else:
-          print "dir(self.preflight_node.getPDGNode())", dir(self.preflight_node.getPDGNode())
+          #print "dir(self.preflight_node.getPDGNode())", dir(self.preflight_node.getPDGNode())
           hou.ui.displayMessage("Preflight Failed to cook: Node wasn't initialised / cook method not available on this node.")
       else:
         # no preflight
@@ -339,7 +339,29 @@ class submit():
                     hou_parm.setAutoscope(False)
                     hou_keyframe = hou.StringKeyframe()
                     hou_keyframe.setTime(0)
-                    hou_keyframe.setExpression("import hou"+'\n'+"version = \'v'+str(hou.pwd().parm(\'version_int\').eval()).zfill(3)"+'\n'+"return version", hou.exprLanguage.Python)
+                    ver_expr = \
+"""
+# This allows versioning to be inherited by the multi parm db
+import hou
+import re
+
+node = hou.pwd()
+parm = hou.evaluatingParm()
+
+index_key = node.parm('index_key_template').eval()
+multiparm_index = node.userData('verdb_'+index_key)
+
+version = 0
+
+if multiparm_index is not None:
+    multiparm_index = str(multiparm_index)
+    version_parm = node.parm('version'+multiparm_index)
+    if version_parm is not None:
+        version = version_parm.eval()        
+
+return version
+"""
+                    hou_keyframe.setExpression(ver_expr, hou.exprLanguage.Python)
                     hou_parm.setKeyframe(hou_keyframe)
 
                     expr = \
@@ -461,3 +483,81 @@ return template
                 print 'out path', file_path
                 
                 node.parm(out_parm_name).set(file_path)
+
+                def update_index(node, index_int):
+                    index_key_parm_name = 'index_key' + str(index_int)
+                    #print "update node", node, 'index_int', index_int, 'index_key_parm_name', index_key_parm_name
+                    index_key_parm = node.parm(index_key_parm_name)
+                    #print 'update index from parm', index_key_parm
+                    index_key = index_key_parm.eval()
+                    #version = node.parm('version' + str(index_int) ).eval()
+                    node.setUserData( 'verdb_'+index_key, str(index_int) )
+                    #print "Changed parm index_key", index_key, "index_int", index_int
+
+                # ensure parameter callbacks exists
+                def parm_changed(node, event_type, **kwargs):
+                  
+                  parm_tuple=kwargs['parm_tuple']
+
+                  if parm_tuple is None:
+                    hou.ui.displayMessage("Too many parms were changed.  callback hasn't been designed to handle this yet, changes may be needed in cloud_submit.py to handle this")
+                  
+                  name = parm_tuple.name()
+
+                  # if a key has changed
+                  is_multiparm = parm_tuple.isMultiParmInstance()
+
+                  if is_multiparm and 'index_key' in name:
+                    
+                    if len(parm_tuple.eval()) > 1:
+                      hou.ui.displayMessage("multiple items in tuple, changes may be needed in cloud_submit.py to handle this")
+                    
+                    index_int = next(re.finditer(r'\d+$', name)).group(0)
+                    
+                    print 'index_key in name', name, 'update', index_int
+                    update_index(node, index_int)
+
+                  # if multiparm instance count has changed, update all and remove any missing.
+                  if 'versiondb0' in name:
+                    multiparm_count = parm_tuple.eval()[0]
+                    print "Total parms changed.  validate and clean out old dict. total parms:", multiparm_count
+                    index_keys = []
+                    for index_int in range(1, int(multiparm_count)+1):
+                      index_key_parm_name = 'index_key'+str(index_int)
+                      index_key_parm = node.parm(index_key_parm_name)
+                      print 'update', index_key_parm.name()
+                      index_key = index_key_parm.eval()
+                      index_keys.append('verdb_'+index_key)
+                      print 'update index', index_int, 'node', node
+                      update_index(node, index_int)
+                    
+                    # first all items in dict will be checked for existance on node.  if they dont exist they will be destroyed on the dict.
+                    user_data_total = 0
+                    
+                    keys_to_destroy = []
+                    for index_key, value in node.userDataDict().items(): 
+                      if index_key not in index_keys and 'verdb_' in index_key:
+                        print "node missing key", index_key, ":", value, 'will remove'
+                        keys_to_destroy.append(index_key)
+                      else:
+                        user_data_total += 1
+                    
+                    if len(keys_to_destroy) > 0:
+                      for index_key in keys_to_destroy:
+                        node.destroyUserData(index_key)
+                        print "destroyed key", index_key
+                      
+
+                    # all lookups and validation needs to double check the data is correct.  if incorrect, trigger cleanup.
+                    # if number of entries dont match, trigger cleanup. this can occur if a wedge is entered in as an index manually, and then altered. we locked parms to avoid this.
+                    # new indexes should be automated.
+                    
+
+
+
+                
+                #remove callback to replace
+                #removeEventCallback((hou.nodeEventType.ParmTupleChanged, ), parm_changed) 
+                
+                #add callback
+                node.addEventCallback((hou.nodeEventType.ParmTupleChanged, ), parm_changed)

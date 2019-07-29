@@ -35,6 +35,42 @@ class submit():
     self.source_top_nodes = []
     self.added_workitems = []
     self.added_dependencies = []
+    self.output_types = {
+      'opengl':{'output':'picture','extension':'jpg','type_path':'flipbook/frames','static_expression':False},
+      'rop_geometry':{'output':'sopoutput','extension':'bgeo.sc','type_path':'cache','static_expression':True},
+      'vellumio':{'output':'file','extension':'bgeo.sc','type_path':'cache','static_expression':False},
+      'rop_alembic':{'output':'filename','extension':'abc','type_path':'cache','static_expression':True},
+      'file':{'output':'file','extension':'bgeo.sc','type_path':'cache','static_expression':True},
+      'ropcomposite':{'output':'copoutput','extension':'exr','type_path':'flipbook/frames','static_expression':True},
+      'ropmantra':{
+          'output':'vm_picture',
+          'extension':'exr',
+          'type_path':'render/frames',
+          'static_expression':True,
+          'overrides':{
+              'frame':"import hou"+'\n'+"value = '$F4'"+'\n'+"return value"
+          }
+      },
+      'ifd':{
+          'output':'vm_picture',
+          'extension':'exr',
+          'type_path':'render/frames',
+          'static_expression':True,
+          'overrides':{
+              'frame':"import hou"+'\n'+"value = '$F4'"+'\n'+"return value"
+          }
+      },
+      'ffmpegencodevideo':{
+          'output':'outputfilename',
+          'extension':'mp4',
+          'type_path':'flipbook/videos',
+          'static_expression':False,
+          'file_template':"`chs('shot_path')`/`chs('output_type')`/`chs('element_name')`/`chs('versionstr')`/`chs('shot')`.`chs('element_name')`.`chs('versionstr')`.`chs('wedge_string')`.`chs('file_type')`",
+          'overrides':{
+              'expr':'"{ffmpeg}" -y -r {frames_per_sec}/1 -f concat -safe 0 -apply_trc iec61966_2_1 -i "{frame_list_file}" -c:v libx264 -b:v 10M -vf "fps={frames_per_sec},format=yuv420p" -movflags faststart "{output_file}"'
+          }
+      }
+    }
 
   def assign_preflight(self):
     print "assign preflight node", self.node.path(), "on topnet", self.parent
@@ -244,47 +280,12 @@ class submit():
             shot_default = shot_var
             file_template_default = "`chs('shot_path')`/`chs('output_type')`/`chs('element_name')`/`chs('versionstr')`/`chs('shot')`.`chs('scene_name')`.`chs('element_name')`.`chs('versionstr')`.`chs('wedge_string')`.`chs('frame')`.`chs('file_type')`"
             
-            output_types = {
-                'opengl':{'output':'picture','extension':'jpg','type_path':'flipbook/frames','static_expression':False},
-                'rop_geometry':{'output':'sopoutput','extension':'bgeo.sc','type_path':'cache','static_expression':True},
-                'vellumio':{'output':'file','extension':'bgeo.sc','type_path':'cache','static_expression':False},
-                'rop_alembic':{'output':'filename','extension':'abc','type_path':'cache','static_expression':True},
-                'file':{'output':'file','extension':'bgeo.sc','type_path':'cache','static_expression':True},
-                'ropcomposite':{'output':'copoutput','extension':'exr','type_path':'flipbook/frames','static_expression':True},
-                'ropmantra':{
-                    'output':'vm_picture',
-                    'extension':'exr',
-                    'type_path':'render/frames',
-                    'static_expression':True,
-                    'overrides':{
-                        'frame':"import hou"+'\n'+"value = '$F4'"+'\n'+"return value"
-                    }
-                },
-                'ifd':{
-                    'output':'vm_picture',
-                    'extension':'exr',
-                    'type_path':'render/frames',
-                    'static_expression':True,
-                    'overrides':{
-                        'frame':"import hou"+'\n'+"value = '$F4'"+'\n'+"return value"
-                    }
-                },
-                'ffmpegencodevideo':{
-                    'output':'outputfilename',
-                    'extension':'mp4',
-                    'type_path':'flipbook/videos',
-                    'static_expression':False,
-                    'file_template':"`chs('shot_path')`/`chs('output_type')`/`chs('element_name')`/`chs('versionstr')`/`chs('shot')`.`chs('element_name')`.`chs('versionstr')`.`chs('wedge_string')`.`chs('file_type')`",
-                    'overrides':{
-                        'expr':'"{ffmpeg}" -y -r {frames_per_sec}/1 -f concat -safe 0 -apply_trc iec61966_2_1 -i "{frame_list_file}" -c:v libx264 -b:v 10M -vf "fps={frames_per_sec},format=yuv420p" -movflags faststart "{output_file}"'
-                    }
-                },
-            }
+
             
             # If target matches node typ in dict, then apply versioning
             print 'node type', node.type().name()
-            if node.type().name() in output_types:
-                lookup = output_types[node.type().name()]
+            if node.type().name() in self.output_types:
+                lookup = self.output_types[node.type().name()]
                 extension = lookup['extension']
                 print 'extension', extension
                 static_expression = lookup['static_expression']

@@ -5,12 +5,34 @@
     <menu>
         <scriptItem id="opmenu.update_rop_output_paths_for_selected_nodes">
         <label>Update Rop Output Paths for Selected SOP/TOP Nodes</label>
+        <context>
+        <expression>
+<![CDATA[
+### Determine if item is visible ###
+import sys
+import os
+
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+sys.path.append(menu_path)
+
+import cloud_submit as cloud_submit
+
+node = kwargs["node"]
+type_name = node.type().name()
+
+if type_name not in cloud_submit.submit(node).output_types and type_name != 'ropfetch':
+    return False
+
+return True
+]]>
+        </expression>
+        </context>
         <scriptCode>
 <![CDATA[
 
 import sys
-
 import os
+
 menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
 sys.path.append(menu_path)
 
@@ -28,6 +50,21 @@ cloud_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs)
     <menu>
         <scriptItem id="opmenu.assign_node_for_topnet_preflight">
         <label>Assign Node For TOPNET Preflight</label>
+        <context>
+        <expression>
+<![CDATA[
+### Determine if item is visible ###
+
+node = kwargs["node"]
+category = node.type().category().name()
+
+if category != 'Top':
+    return False
+
+return True
+]]>
+        </expression>
+        </context>
         <scriptCode>
 <![CDATA[
 print "Assign Node For TOPNET Preflight"
@@ -51,6 +88,21 @@ cloud_submit.submit(node).assign_preflight()
     <menu>
         <scriptItem id="opmenu.dirty_upstream_source_nodes">
         <label>Dirty Upstream Source Nodes</label>
+        <context>
+        <expression>
+<![CDATA[
+### Determine if item is visible ###
+
+node = kwargs["node"]
+category = node.type().category().name()
+
+if category != 'Top':
+    return False
+
+return True
+]]>
+        </expression>
+        </context>
         <scriptCode>
 <![CDATA[
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
@@ -74,6 +126,21 @@ cloud_submit.submit(node).dirty_upstream_source_nodes()
     <menu>
         <scriptItem id="opmenu.submit_with_preflight">
         <label>Cook (With Preflight If Available)</label>
+        <context>
+        <expression>
+<![CDATA[
+### Determine if item is visible ###
+
+node = kwargs["node"]
+category = node.type().category().name()
+
+if category != 'Top':
+    return False
+
+return True
+]]>
+        </expression>
+        </context>
         <scriptCode>
 <![CDATA[
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
@@ -125,7 +192,7 @@ if not node.type().areContentsViewable():
 return True
 ]]>
             </expression>
-	    </context>
+	        </context>
             <scriptCode>
 <![CDATA[
 # unlocked node

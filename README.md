@@ -15,7 +15,7 @@ FIREHAWK_HOUDINI_TOOLS = "/prod/assets/openfirehawk-houdini-tools"
 PROD_ROOT = "/prod"
 
 # This is a bind mount/link that is identical to the path above, but is an absolute reference 
-# so that volumes can be referenced with absolute paths over vpn.
+# so that volumes at different locations can be referenced with absolute paths over vpn.
 PROD_ONSITE_ROOT = "/cairns_prod"
 
 # This is an absolute reference to an offsite storage volume that is avaiable 

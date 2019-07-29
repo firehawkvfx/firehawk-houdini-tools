@@ -19,7 +19,8 @@ PROD_ROOT = "/prod"
 PROD_ONSITE_ROOT = "/cairns_prod"
 
 # This is an absolute reference to an offsite storage volume that is avaiable 
-# to any cloud based systems / onsite via vpn.
+# to any cloud based systems / onsite via vpn. if you dont intend to use any cloud functions, 
+# it can be set to the same value as PROD_ONSITE_ROOT
 PROD_CLOUD_ROOT = "/aws_sydney_prod"
 
 # Deadline is only required if cloud submission to AWS is to be used, 

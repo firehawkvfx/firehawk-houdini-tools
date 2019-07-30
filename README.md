@@ -1,6 +1,6 @@
 # openfirehawk-houdini-tools
 
-A collection of useful hda's and scripts used in the Open Firehawk VFX pipeline.
+A collection of useful hda's and scripts used in the Open Firehawk VFX pipeline.  I've you find this useful and would like to support its evolution reach out to contribute to the repo or you can support the work on Patreon - https://www.patreon.com/openfirehawk
 
 To use this you will need some environment variables in your ~/houdini17.5/houdini.env file.
 

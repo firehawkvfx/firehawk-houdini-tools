@@ -3,8 +3,8 @@
 <menuDocument>
     # Update Rop Output Paths for Selected SOP/TOP Nodes
     <menu>
-        <scriptItem id="opmenu.update_rop_output_paths_for_selected_nodes">
-        <label>Update Rop Output Paths for Selected SOP/TOP Nodes</label>
+        <scriptItem id="opmenu.update_rop_template_for_selected_nodes">
+        <label>Update Rop Template for Selected SOP/TOP Nodes</label>
         <context>
         <expression>
 <![CDATA[
@@ -41,7 +41,54 @@ import cloud_submit as cloud_submit
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 node = kwargs["node"]
 
-cloud_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs)
+versiondb=False
+cloud_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs, versiondb)
+]]>
+        </scriptCode>
+        </scriptItem>
+    </menu>
+    # Multiparm version tracking
+    <menu>
+        <scriptItem id="opmenu.versiondb_update_rop_template_for_selected_nodes">
+        <label>VersionDB Update Rop Template for Selected SOP/TOP Nodes</label>
+        <context>
+        <expression>
+<![CDATA[
+### Determine if item is visible ###
+import sys
+import os
+
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+sys.path.append(menu_path)
+
+import cloud_submit as cloud_submit
+
+node = kwargs["node"]
+type_name = node.type().name()
+
+if type_name not in cloud_submit.submit(node).output_types and type_name != 'ropfetch':
+    return False
+
+return True
+]]>
+        </expression>
+        </context>
+        <scriptCode>
+<![CDATA[
+
+import sys
+import os
+
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+sys.path.append(menu_path)
+
+import cloud_submit as cloud_submit
+
+arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+node = kwargs["node"]
+
+versiondb=True
+cloud_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs, versiondb)
 ]]>
         </scriptCode>
         </scriptItem>

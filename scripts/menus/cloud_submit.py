@@ -243,7 +243,7 @@ class submit():
             source_top_node.dirty(False)
             print "Dirtied source_top_node", source_top_node.name
 
-    def update_rop_output_paths_for_selected_nodes(self, kwargs={}):
+    def update_rop_output_paths_for_selected_nodes(self, kwargs={}, versiondb=False):
         print "Update Rop Output Paths for Selected SOP/TOP Nodes. Note: currently not handling @attributes $attributes in element names correctly."
         self.selected_nodes = kwargs['items']
 
@@ -359,20 +359,48 @@ print 'parm callback', parm.name()
                         # default_expression=("hou.frame()"), default_expression_language=(hou.scriptLanguage.Python) ) )
                         parm_folder.addParmTemplate(
                             hou.StringParmTemplate("frame", "Frame", 1, ["$F4"]))
+                        
                         parm_folder.addParmTemplate(hou.StringParmTemplate(
                             "file_type", "File Type", 1, [extension]))
 
                         parm_folder.addParmTemplate(hou.StringParmTemplate(
                             "file_template", "File Template", 1, [file_template]))
-                        #parm_folder.addParmTemplate(hou.FloatParmTemplate("amp", "Amp", 2))
+                        
+                        if versiondb:
+                            # if version db is selected then multiparms are created
+                            parm_folder.addParmTemplate(hou.SeparatorParmTemplate("sepparm"))
 
-                        parm_group.append(parm_folder)
+                            # Code for parameter template
+                            parm_folder.addParmTemplate(hou.StringParmTemplate("index_key_template", "Index Key Template", 1, default_value=(["`chs('element_name')`_`chs('wedge_string')`"]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal))
+                            
+                            # Code for parameter template
+                            version_parm_folder = hou.FolderParmTemplate("versiondb0", "Version DB", folder_type=hou.folderType.MultiparmBlock, default_value=0, ends_tab_group=False)
+                            #hou_parm_template.addParmTemplate(hou_parm_template2)
+                            # Code for parameter template
+                            hou_parm_template2 = hou.StringParmTemplate("index_key#", "Index Key", 1, default_value=([""]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal)
+                            
+                            hou_parm_template2.setConditional(hou.parmCondType.DisableWhen, "{ 0 != 1 }")
+                            hou_parm_template2.setJoinWithNext(True)
+
+                            version_parm_folder.addParmTemplate(hou_parm_template2)
+                            # Code for parameter template
+                            hou_parm_template2 = hou.IntParmTemplate("version#", "Version", 1, default_value=([0]), min=0, max=10, min_is_strict=False, max_is_strict=False, naming_scheme=hou.parmNamingScheme.Base1, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="",   item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal, menu_use_token=False)
+                            version_parm_folder.addParmTemplate(hou_parm_template2)
+                            
+                            parm_group.append(parm_folder)
+                            parm_group.append(version_parm_folder)
+                            #parm_folder.addParmTemplate(
+                            #hou_parm_template_group.append(hou_parm_template)
+                            #hou_node.setParmTemplateGroup(hou_parm_template_group)
+                        else:
+                            parm_group.append(parm_folder)
                         node.setParmTemplateGroup(parm_group)
 
-                        hou_parm = node.parm("versionstr")
+                        hou_parm = node.parm("version_int")
+                        print "int hou_parm", hou_parm
                         hou_parm.lock(False)
                         hou_parm.setAutoscope(False)
-                        hou_keyframe = hou.StringKeyframe()
+                        hou_keyframe = hou.Keyframe()
                         hou_keyframe.setTime(0)
                         ver_expr = \
                             """
@@ -400,8 +428,27 @@ return version
                             ver_expr, hou.exprLanguage.Python)
                         hou_parm.setKeyframe(hou_keyframe)
 
+                        hou_parm = node.parm("versionstr")
+                        hou_parm.lock(False)
+                        hou_parm.setAutoscope(False)
+                        hou_keyframe = hou.StringKeyframe()
+                        hou_keyframe.setTime(0)
+                        ver_expr = \
+                            """
+# This returns the version as a padded string.
+import hou
+version = 'v'+str(hou.pwd().parm('version_int').eval()).zfill(3)
+return version
+"""
+                        hou_keyframe.setExpression(
+                            ver_expr, hou.exprLanguage.Python)
+                        hou_parm.setKeyframe(hou_keyframe)
+
                         expr = \
                             """
+# When multiple sites (cloud) are mounted over vpn, this allows tops to recognise if data exists in a particulr location.
+# It means data can be submitted for generation or deleted from multiple locaitons,
+# However generation should normally be executed by render nodes that exist at the same site through via a scheduler.
 import hou
 node = hou.pwd()
 lookup = {'submission_location':'$PROD_ROOT', 'cloud':'$PROD_CLOUD_ROOT', 'onsite':'$PROD_ONSITE_ROOT'}
@@ -554,9 +601,43 @@ return template
                         node.setUserData('verdb_'+index_key, str(index_int))
                         #print "Changed parm index_key", index_key, "index_int", index_int
 
+                    def multiparm_housecleaning(node, multiparm_count):
+                        print "Validate and clean out old dict. total parms:", multiparm_count
+                        index_keys = []
+                        for index_int in range(1, int(multiparm_count)+1):
+                            index_key_parm_name = 'index_key' + \
+                                str(index_int)
+                            print "index_key_parm_name", index_key_parm_name
+                            
+                            index_key_parm = node.parm(
+                                index_key_parm_name)
+                            print 'update', index_key_parm.name()
+                            index_key = index_key_parm.eval()
+
+                            print "index_key", index_key
+                            index_keys.append('verdb_'+index_key)
+                            print 'update index', index_int, 'node', node
+                            update_index(node, index_int)
+
+                        # first all items in dict will be checked for existance on node.  if they dont exist they will be destroyed on the dict.
+                        user_data_total = 0
+
+                        keys_to_destroy = []
+                        for index_key, value in node.userDataDict().items():
+                            if index_key not in index_keys and 'verdb_' in index_key:
+                                print "node missing key", index_key, ":", value, 'will remove'
+                                keys_to_destroy.append(index_key)
+                            else:
+                                user_data_total += 1
+
+                        # keys must be destroyed after they are known in the last operation or lookup will fail mid loop.
+                        if len(keys_to_destroy) > 0:
+                            for index_key in keys_to_destroy:
+                                node.destroyUserData(index_key)
+                                print "destroyed key", index_key
+
                     # ensure parameter callbacks exists
                     def parm_changed(node, event_type, **kwargs):
-                        print "parm changed"
                         parm_tuple = kwargs['parm_tuple']
 
                         if parm_tuple is None:
@@ -593,34 +674,39 @@ return template
                             # if multiparm instance count has changed, update all and remove any missing.
                             if 'versiondb0' in name:
                                 multiparm_count = parm_tuple.eval()[0]
-                                print "Total parms changed.  validate and clean out old dict. total parms:", multiparm_count
-                                index_keys = []
-                                for index_int in range(1, int(multiparm_count)+1):
-                                    index_key_parm_name = 'index_key' + \
-                                        str(index_int)
-                                    index_key_parm = node.parm(
-                                        index_key_parm_name)
-                                    print 'update', index_key_parm.name()
-                                    index_key = index_key_parm.eval()
-                                    index_keys.append('verdb_'+index_key)
-                                    print 'update index', index_int, 'node', node
-                                    update_index(node, index_int)
+                                multiparm_housecleaning( node, multiparm_count )
+                                # print "Total parms changed.  validate and clean out old dict. total parms:", multiparm_count
+                                # index_keys = []
+                                # for index_int in range(1, int(multiparm_count)+1):
+                                #     index_key_parm_name = 'index_key' + \
+                                #         str(index_int)
+                                #     print "index_key_parm_name", index_key_parm_name
+                                    
+                                #     index_key_parm = node.parm(
+                                #         index_key_parm_name)
+                                #     print 'update', index_key_parm.name()
+                                #     index_key = index_key_parm.eval()
 
-                                # first all items in dict will be checked for existance on node.  if they dont exist they will be destroyed on the dict.
-                                user_data_total = 0
+                                #     print "index_key", index_key
+                                #     index_keys.append('verdb_'+index_key)
+                                #     print 'update index', index_int, 'node', node
+                                #     update_index(node, index_int)
 
-                                keys_to_destroy = []
-                                for index_key, value in node.userDataDict().items():
-                                    if index_key not in index_keys and 'verdb_' in index_key:
-                                        print "node missing key", index_key, ":", value, 'will remove'
-                                        keys_to_destroy.append(index_key)
-                                    else:
-                                        user_data_total += 1
+                                # # first all items in dict will be checked for existance on node.  if they dont exist they will be destroyed on the dict.
+                                # user_data_total = 0
 
-                                if len(keys_to_destroy) > 0:
-                                    for index_key in keys_to_destroy:
-                                        node.destroyUserData(index_key)
-                                        print "destroyed key", index_key
+                                # keys_to_destroy = []
+                                # for index_key, value in node.userDataDict().items():
+                                #     if index_key not in index_keys and 'verdb_' in index_key:
+                                #         print "node missing key", index_key, ":", value, 'will remove'
+                                #         keys_to_destroy.append(index_key)
+                                #     else:
+                                #         user_data_total += 1
+
+                                # if len(keys_to_destroy) > 0:
+                                #     for index_key in keys_to_destroy:
+                                #         node.destroyUserData(index_key)
+                                #         print "destroyed key", index_key
 
                                 # all lookups and validation needs to double check the data is correct.  if incorrect, trigger cleanup.
                                 # if number of entries dont match, trigger cleanup. this can occur if a wedge is entered in as an index manually, and then altered. we locked parms to avoid this.
@@ -629,5 +715,18 @@ return template
                         # remove callback to replace
                         #removeEventCallback((hou.nodeEventType.ParmTupleChanged, ), parm_changed)
 
-                    print "add callback"
-                    node.addEventCallback((hou.nodeEventType.ParmTupleChanged, ), parm_changed)
+                    print "determin if add callback needed"
+
+                    parm_callback_applied = False
+                    for callback in node.eventCallbacks():
+                        for item in callback:
+                            if hasattr(item, 'func_name'):
+                                func_name = item.func_name
+                                if func_name == 'parm_changed':
+                                    parm_callback_applied = True
+                    if not parm_callback_applied:
+                        print "add parm changed callback"
+                        node.addEventCallback((hou.nodeEventType.ParmTupleChanged, ), parm_changed)
+                        # do house cleaning on dict in case drift has occured between the dict and the multiparm state.
+                        multiparm_count = node.parm("versiondb0").eval()
+                        multiparm_housecleaning(node, multiparm_count)

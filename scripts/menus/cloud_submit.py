@@ -303,17 +303,34 @@ class submit():
                         parm_group = node.parmTemplateGroup()
                         parm_folder = hou.FolderParmTemplate(
                             "folder", "Versioning")
+                        callback_expr = \
+                            """
+# This allows versioning to be inherited by the multi parm db
+import hou
+node = hou.pwd()
+parm = hou.evaluatingParm()
+print 'parm callback', parm.name()
+"""
+                        parm_folder.setScriptCallbackLanguage(hou.scriptLanguage.Python)
+                        parm_folder.setScriptCallback(callback_expr)
                         #parm_folder.addParmTemplate(hou.StringParmTemplate("element_name_template", "Element Name Template", 1, ["${OS}"]))
                         parm_folder.addParmTemplate(hou.StringParmTemplate(
                             "element_name_template", "Element Name Template", 1, ["${OS}"]))
 
-                        parm_folder.addParmTemplate(hou.StringParmTemplate(
-                            "element_name", "Element Name", 1, [node_name]))
+                        element_name_parm = hou.StringParmTemplate(
+                            "element_name", "Element Name", 1, [node_name])
+                        #elementName.setScriptCallback(callback_expr)
+                        #elementName.setScriptCallbackLanguage(hou.scriptLanguage.Python)
 
+                        parm_folder.addParmTemplate(element_name_parm)
+
+                        
                         parm_folder.addParmTemplate(hou.ToggleParmTemplate(
                             "auto_version", "Auto Version Set To Hip Version on Execute", 1))
+
                         parm_folder.addParmTemplate(
                             hou.IntParmTemplate("version_int", "Version", 1))
+
                         parm_folder.addParmTemplate(hou.StringParmTemplate(
                             "versionstr", "Version String", 1, [""]))
 

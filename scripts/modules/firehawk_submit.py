@@ -740,6 +740,23 @@ return template
         # requires hou
         # ensure this is located just before self.createJobDirsAndSerializeWorkItems(work_item)
         # also ensure the current index_key string exists as a top attribute.
+        
+        # example externals for scheduler import.
+        ### Firehawk versioning alterations
+        # import hou
+        # menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
+        # sys.path.append(menu_path)
+        # import firehawk_submit as firehawk_submit
+        # ###
+        
+        # example in onschedule callback
+        # ### firehawk on schedule version handling
+        # print "on schedule version handling", work_item
+        # rop_path = work_item.data.stringData('rop', 0)
+        # hou_node = hou.node(rop_path)
+        # print "hou_node", hou_node
+        # firehawk_submit.submit(hou_node).onScheduleVersioning(work_item)
+        # ### end firehawk on schedule version handling
         print "onScheduleVersioning start workitem:", work_item
         if work_item:
             print "set int version"

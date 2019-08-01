@@ -1,5 +1,31 @@
 #!/usr/bin/python
 
+# pdg dependencies
+
+import json
+import logging
+import os
+import re
+import shlex
+import signal
+import subprocess
+import sys
+import threading
+import time
+import traceback
+from collections import namedtuple
+from distutils.spawn import find_executable
+from multiprocessing import cpu_count
+
+from pdg import createHarsServer, createProcessJob, scheduleResult
+from pdg.job.callbackserver import CallbackServerMixin
+from pdg.scheduler import PyScheduler, convertEnvMapToUTF8
+from pdg.staticcook import StaticCookMixin
+from pdg.utils import TickTimer, expand_vars
+
+
+# firehawk versioning
+
 import hou
 import pdg
 import sys
@@ -9,6 +35,8 @@ import os
 import errno
 import numpy as np
 import datetime
+
+from shutil import copyfile
 
 #####
 
@@ -242,6 +270,109 @@ class submit():
         for source_top_node in self.source_top_nodes:
             source_top_node.dirty(False)
             print "Dirtied source_top_node", source_top_node.name
+
+    def update_index(self, node, index_int):
+        index_key_parm_name = 'index_key' + str(index_int)
+        #print "update node", node, 'index_int', index_int, 'index_key_parm_name', index_key_parm_name
+        index_key_parm = node.parm(index_key_parm_name)
+        #print 'update index from parm', index_key_parm
+        index_key = index_key_parm.eval()
+        #version = node.parm('version' + str(index_int) ).eval()
+        node.setUserData('verdb_'+index_key, str(index_int))
+        #print "Changed parm index_key", index_key, "index_int", index_int
+
+    def multiparm_housecleaning(self, node, multiparm_count):
+        print "Validate and clean out old dict. total parms:", multiparm_count
+        index_keys = []
+        for index_int in range(1, int(multiparm_count)+1):
+            index_key_parm_name = 'index_key' + \
+                str(index_int)
+            print "index_key_parm_name", index_key_parm_name
+            
+            index_key_parm = node.parm(
+                index_key_parm_name)
+            print 'update', index_key_parm.name()
+            index_key = index_key_parm.eval()
+
+            print "index_key", index_key
+            index_keys.append('verdb_'+index_key)
+            print 'update index', index_int, 'node', node
+            self.update_index(node, index_int)
+
+        # first all items in dict will be checked for existance on node.  if they dont exist they will be destroyed on the dict.
+        user_data_total = 0
+
+        keys_to_destroy = []
+        for index_key, value in node.userDataDict().items():
+            if index_key not in index_keys and 'verdb_' in index_key:
+                print "node missing key", index_key, ":", value, 'will remove'
+                keys_to_destroy.append(index_key)
+            else:
+                user_data_total += 1
+
+        # keys must be destroyed after they are known in the last operation or lookup will fail mid loop.
+        if len(keys_to_destroy) > 0:
+            for index_key in keys_to_destroy:
+                node.destroyUserData(index_key)
+                print "destroyed key", index_key
+
+    # ensure parameter callbacks exists
+    def parm_changed(self, node, event_type, **kwargs):
+        parm_tuple = kwargs['parm_tuple']
+
+        if parm_tuple is None:
+            parm_warn = int(
+                hou.node("/obj").cachedUserData("parm_warn_disable") != '1')
+            if parm_warn:
+                hou.ui.displayMessage(
+                    "Too many parms were changed.  callback hasn't been designed to handle this yet, changes may be needed in cloud_submit.py to handle this.  see shell output")
+                print "Too many parms were changed.  callback hasn't been designed to handle this yet, changes may be needed in cloud_submit.py to handle this.  see shell output.  This warning will be displayed once for the current session."
+                hou.node(
+                    "/obj").setCachedUserData('parm_warn_disable', '1')
+            # print "node", node
+            # print "event_type", event_type
+            # print "parm_tuple", parm_tuple
+            # print "kwargs", kwargs
+        else:
+            name = parm_tuple.name()
+
+            # if a key has changed
+            is_multiparm = parm_tuple.isMultiParmInstance()
+
+            if is_multiparm and 'index_key' in name:
+
+                if len(parm_tuple.eval()) > 1:
+                    hou.ui.displayMessage(
+                        "multiple items in tuple, changes may be needed in cloud_submit.py to handle this")
+
+                index_int = next(re.finditer(
+                    r'\d+$', name)).group(0)
+
+                #print 'index_key in name', name, 'update', index_int
+
+                self.update_index(node, index_int)
+
+            # if multiparm instance count has changed, update all and remove any missing.
+            if 'versiondb0' in name:
+                multiparm_count = parm_tuple.eval()[0]
+                self.multiparm_housecleaning( node, multiparm_count )
+
+    
+    def add_version_db_callback(self, node):
+        print "determin if add callback needed"
+        parm_callback_applied = False
+        for callback in node.eventCallbacks():
+            for item in callback:
+                if hasattr(item, 'func_name'):
+                    func_name = item.func_name
+                    if func_name == 'parm_changed':
+                        parm_callback_applied = True
+        if not parm_callback_applied:
+            print "add parm changed callback"
+            node.addEventCallback((hou.nodeEventType.ParmTupleChanged, ), self.parm_changed)
+            # do house cleaning on dict in case drift has occured between the dict and the multiparm state.
+            multiparm_count = node.parm("versiondb0").eval()
+            self.multiparm_housecleaning(node, multiparm_count)
 
     def update_rop_output_paths_for_selected_nodes(self, kwargs={}, versiondb=False):
         print "Update Rop Output Paths for Selected SOP/TOP Nodes. Note: currently not handling @attributes $attributes in element names correctly."
@@ -591,104 +722,110 @@ return template
 
                     node.parm(out_parm_name).set(file_path)
                     print "add defs"
-                    def update_index(node, index_int):
-                        index_key_parm_name = 'index_key' + str(index_int)
-                        #print "update node", node, 'index_int', index_int, 'index_key_parm_name', index_key_parm_name
-                        index_key_parm = node.parm(index_key_parm_name)
-                        #print 'update index from parm', index_key_parm
-                        index_key = index_key_parm.eval()
-                        #version = node.parm('version' + str(index_int) ).eval()
-                        node.setUserData('verdb_'+index_key, str(index_int))
-                        #print "Changed parm index_key", index_key, "index_int", index_int
 
-                    def multiparm_housecleaning(node, multiparm_count):
-                        print "Validate and clean out old dict. total parms:", multiparm_count
-                        index_keys = []
-                        for index_int in range(1, int(multiparm_count)+1):
-                            index_key_parm_name = 'index_key' + \
-                                str(index_int)
-                            print "index_key_parm_name", index_key_parm_name
-                            
-                            index_key_parm = node.parm(
-                                index_key_parm_name)
-                            print 'update', index_key_parm.name()
-                            index_key = index_key_parm.eval()
+                    self.add_version_db_callback(node)
 
-                            print "index_key", index_key
-                            index_keys.append('verdb_'+index_key)
-                            print 'update index', index_int, 'node', node
-                            update_index(node, index_int)
+    def onScheduleVersioning(self, work_item=None):
+        # This should only be called within the scheduler.
+        ### version tracking: write version attr before json file is created.
+        # requires hou
+        # ensure this is located just before self.createJobDirsAndSerializeWorkItems(work_item)
+        # also ensure the current index_key string exists as a top attribute.
+        print "onScheduleVersioning start workitem:", work_item
+        if work_item:
+            print "set int version"
+            hip_path = work_item.data.stringData('hip', 0)
+            rop_path = work_item.data.stringData('rop', 0)
+            
+            print "hip_path", hip_path
 
-                        # first all items in dict will be checked for existance on node.  if they dont exist they will be destroyed on the dict.
-                        user_data_total = 0
+            hip_path = os.path.split(hip_path)[1]
+            print "hip_path split", hip_path
+            version = int(re.search(r"_v([0-9][0-9][0-9])?.?[0-9]?[0-9]?[0-9]_", hip_path).group(1))
+            print "setting version for workitem to:", version
+            work_item.data.setInt("version", version, 0)
+            
+            all_attribs = work_item.data.stringDataArray('wedgeattribs')
+            print "all_attribs", all_attribs
+            all_attribs.append('version')
+            print "set string array"
+            work_item.data.setStringArray('wedgeattribs', sorted(all_attribs))
+            parm_path = rop_path+'/version_int'
+            print 'set string channel', parm_path
+            work_item.data.setString("{}channel".format('version'), parm_path, 0)
+            
+            ### Set data on the node db multiparm, uses hou.
 
-                        keys_to_destroy = []
-                        for index_key, value in node.userDataDict().items():
-                            if index_key not in index_keys and 'verdb_' in index_key:
-                                print "node missing key", index_key, ":", value, 'will remove'
-                                keys_to_destroy.append(index_key)
-                            else:
-                                user_data_total += 1
+            hou_node = hou.node(rop_path)
 
-                        # keys must be destroyed after they are known in the last operation or lookup will fail mid loop.
-                        if len(keys_to_destroy) > 0:
-                            for index_key in keys_to_destroy:
-                                node.destroyUserData(index_key)
-                                print "destroyed key", index_key
+            # ensure callback exists on node of work item to detect changes to parms and sync dictionary
+            self.add_version_db_callback(hou_node)
 
-                    # ensure parameter callbacks exists
-                    def parm_changed(node, event_type, **kwargs):
-                        parm_tuple = kwargs['parm_tuple']
+            index_key = work_item.data.stringData('index_key', 0)
+            print "index_key", index_key
+            
+            # multiparm index is the string to append to parm names to retrive the correct multiparm instance
+            
+            def sorted_nicely( l ): 
+                convert = lambda text: int(text) if text.isdigit() else text 
+                alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+                return sorted(l, key = alphanum_key)
 
-                        if parm_tuple is None:
-                            parm_warn = int(
-                                hou.node("/obj").cachedUserData("parm_warn_disable") != '1')
-                            if parm_warn:
-                                hou.ui.displayMessage(
-                                    "Too many parms were changed.  callback hasn't been designed to handle this yet, changes may be needed in cloud_submit.py to handle this.  see shell output")
-                                print "Too many parms were changed.  callback hasn't been designed to handle this yet, changes may be needed in cloud_submit.py to handle this.  see shell output.  This warning will be displayed once for the current session."
-                                hou.node(
-                                    "/obj").setCachedUserData('parm_warn_disable', '1')
-                            # print "node", node
-                            # print "event_type", event_type
-                            # print "parm_tuple", parm_tuple
-                            # print "kwargs", kwargs
+            multiparm_index = hou_node.userData('verdb_'+index_key)
+            # if the index doesn't exist in the userDataDict, then a new parm instance must be created in the live hip file. userData should be updated by the parameter callback.
+            if multiparm_index is None:
+                
+                verdb = hou_node.userDataDict()
+                
+                new_index_key = 'verdb_'+index_key
+                # sort list by value indices, and add current item
+                verdb_list = sorted(verdb, key=verdb.get) + [new_index_key]
+                # clean list if not verdb
+                verdb_list = [ x for x in verdb_list if 'verdb_' in x ]
+                print 'sorted indexes by current multiparm indices', verdb_list
+
+                # if new entry isn't last, then insert#
+                verdb_sorted = sorted_nicely( verdb_list )
+                append = True
+                
+                # determine if insertion is needed
+                for idx, val in enumerate( verdb_sorted ):
+                    # find entry in list to match, then get index for next item, since current item has no index
+                    if val == new_index_key and idx < len(verdb_sorted)-1:
+                        next_index_key = verdb_sorted[idx+1]
+                        next_index_int = hou_node.userData(next_index_key)
+                        # validate a dicitonary entry exists for the next item
+                        if next_index_int is not None:
+                            next_index_int = int(next_index_int)
                         else:
-                            name = parm_tuple.name()
+                            hou.ui.displayMessage('no dict entry for next index: '+next_index_key)
 
-                            # if a key has changed
-                            is_multiparm = parm_tuple.isMultiParmInstance()
+                        hou_node.parm('versiondb0').insertMultiParmInstance(int(next_index_int)-1)
+                        multiparm_index = int(next_index_int)
+                        append = False
+                        break
+                        
+                if append:
+                    # new index
+                    multiparm_index = int(hou_node.parm('versiondb0').eval()+1)
+                    # increment count
+                    hou_node.parm('versiondb0').insertMultiParmInstance(int(multiparm_index-1))
+                    # set key string on parm
+                    
+                if multiparm_index is not None:
+                    hou_node.parm('index_key'+str(multiparm_index)).set(index_key)
+            else:
+                # if multiparm_index exists, ensure it is an int
+                multiparm_index = int(multiparm_index)
+            
+            version_parm_name = 'version' + str(multiparm_index)
+            print "eval current version"
+            current_multiparm_version = hou_node.parm(version_parm_name).eval()
 
-                            if is_multiparm and 'index_key' in name:
-
-                                if len(parm_tuple.eval()) > 1:
-                                    hou.ui.displayMessage(
-                                        "multiple items in tuple, changes may be needed in cloud_submit.py to handle this")
-
-                                index_int = next(re.finditer(
-                                    r'\d+$', name)).group(0)
-
-                                #print 'index_key in name', name, 'update', index_int
-
-                                update_index(node, index_int)
-
-                            # if multiparm instance count has changed, update all and remove any missing.
-                            if 'versiondb0' in name:
-                                multiparm_count = parm_tuple.eval()[0]
-                                multiparm_housecleaning( node, multiparm_count )
-
-                    print "determin if add callback needed"
-
-                    parm_callback_applied = False
-                    for callback in node.eventCallbacks():
-                        for item in callback:
-                            if hasattr(item, 'func_name'):
-                                func_name = item.func_name
-                                if func_name == 'parm_changed':
-                                    parm_callback_applied = True
-                    if not parm_callback_applied:
-                        print "add parm changed callback"
-                        node.addEventCallback((hou.nodeEventType.ParmTupleChanged, ), parm_changed)
-                        # do house cleaning on dict in case drift has occured between the dict and the multiparm state.
-                        multiparm_count = node.parm("versiondb0").eval()
-                        multiparm_housecleaning(node, multiparm_count)
+            if int(current_multiparm_version) != int(version):
+                print 'update', version_parm_name, "no match- current_multiparm_version:", current_multiparm_version, "current hip version:", version
+                print "setting version on multiparm", version_parm_name, version
+                hou_node.parm(version_parm_name).set(version)
+            
+            print "### end multiversion db block ###"
+            # ### end dynamic version db ###

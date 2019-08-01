@@ -51,9 +51,12 @@ logger = setup_logger('first_logger', '/var/tmp/first_logfile.log')
 super_logger = setup_logger('second_logger', '/var/tmp/second_logfile.log')
 
 sys.path.append('/usr/lib64/python2.7/site-packages')
-sys.path.append('/home/deadlineuser/.local/lib/python2.7/site-packages')
+home_site_packages = os.path.expanduser('~/.local/lib/python2.7/site-packages')
+sys.path.append(home_site_packages)
 sys.path.append('/usr/lib/python2.7/site-packages')
-sys.path.append('/home/deadlineuser/houdini17.5/scripts/s3_sync')
+s3_sync_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/s3_sync'
+sys.path.append(s3_sync_path)
+#sys.path.append('/home/deadlineuser/houdini17.5/scripts/s3_sync')
 
 if direction != 'push' and direction != 'pull':
     logger.info('error no push/pull direction selected')

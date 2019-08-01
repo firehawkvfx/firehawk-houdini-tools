@@ -353,9 +353,9 @@ class submit():
                 self.update_index(node, index_int)
 
             # if multiparm instance count has changed, update all and remove any missing.
-            if 'versiondb0' in name:
-                multiparm_count = parm_tuple.eval()[0]
-                self.multiparm_housecleaning( node, multiparm_count )
+            # if 'versiondb0' in name:
+            #     multiparm_count = parm_tuple.eval()[0]
+            #     self.multiparm_housecleaning( node, multiparm_count )
 
     
     def add_version_db_callback(self, node):
@@ -367,6 +367,7 @@ class submit():
                     func_name = item.func_name
                     if func_name == 'parm_changed':
                         parm_callback_applied = True
+                        print "found callback on node"
         if not parm_callback_applied:
             print "add parm changed callback"
             node.addEventCallback((hou.nodeEventType.ParmTupleChanged, ), self.parm_changed)
@@ -434,24 +435,12 @@ class submit():
                         parm_group = node.parmTemplateGroup()
                         parm_folder = hou.FolderParmTemplate(
                             "folder", "Versioning")
-                        callback_expr = \
-                            """
-# This allows versioning to be inherited by the multi parm db
-import hou
-node = hou.pwd()
-parm = hou.evaluatingParm()
-print 'parm callback', parm.name()
-"""
-                        parm_folder.setScriptCallbackLanguage(hou.scriptLanguage.Python)
-                        parm_folder.setScriptCallback(callback_expr)
-                        #parm_folder.addParmTemplate(hou.StringParmTemplate("element_name_template", "Element Name Template", 1, ["${OS}"]))
+
                         parm_folder.addParmTemplate(hou.StringParmTemplate(
                             "element_name_template", "Element Name Template", 1, ["${OS}"]))
 
                         element_name_parm = hou.StringParmTemplate(
                             "element_name", "Element Name", 1, [node_name])
-                        #elementName.setScriptCallback(callback_expr)
-                        #elementName.setScriptCallbackLanguage(hou.scriptLanguage.Python)
 
                         parm_folder.addParmTemplate(element_name_parm)
 
@@ -506,6 +495,28 @@ print 'parm callback', parm.name()
                             
                             # Code for parameter template
                             version_parm_folder = hou.FolderParmTemplate("versiondb0", "Version DB", folder_type=hou.folderType.MultiparmBlock, default_value=0, ends_tab_group=False)
+                            callback_expr = \
+                                """
+# This allows versioning to be inherited by the multi parm db
+import hou
+import sys
+import os
+
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
+sys.path.append(menu_path)
+import firehawk_submit as firehawk_submit
+
+node = hou.pwd()
+parm = node.parm('versiondb0')
+
+multiparm_count = parm.eval()
+firehawk_submit.submit(node).multiparm_housecleaning( node, multiparm_count )
+"""
+                            version_parm_folder.setScriptCallbackLanguage(hou.scriptLanguage.Python)
+                            version_parm_folder.setScriptCallback(callback_expr)
+
+
+
                             #hou_parm_template.addParmTemplate(hou_parm_template2)
                             # Code for parameter template
                             hou_parm_template2 = hou.StringParmTemplate("index_key#", "Index Key", 1, default_value=([""]), naming_scheme=hou.parmNamingScheme.Base1, string_type=hou.stringParmType.Regular, menu_items=([]), menu_labels=([]), icon_names=([]), item_generator_script="", item_generator_script_language=hou.scriptLanguage.Python, menu_type=hou.menuType.Normal)
@@ -722,8 +733,6 @@ return template
 
                     node.parm(out_parm_name).set(file_path)
                     print "add defs"
-
-                    self.add_version_db_callback(node)
 
     def onScheduleVersioning(self, work_item=None):
         # This should only be called within the scheduler.

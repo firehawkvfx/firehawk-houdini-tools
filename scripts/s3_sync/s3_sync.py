@@ -8,7 +8,8 @@ import os
 import sys
 
 sys.path.append('/usr/lib64/python2.7/site-packages')
-sys.path.append('/home/deadlineuser/.local/lib/python2.7/site-packages')
+home_site_packages = os.path.expanduser('~/.local/lib/python2.7/site-packages')
+sys.path.append(home_site_packages)
 sys.path.append('/usr/lib/python2.7/site-packages')
 
 from awscli.clidriver import create_clidriver

@@ -12,15 +12,15 @@
 import sys
 import os
 
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 node = kwargs["node"]
 type_name = node.type().name()
 
-if type_name not in cloud_submit.submit(node).output_types and type_name != 'ropfetch':
+if type_name not in firehawk_submit.submit(node).output_types and type_name != 'ropfetch':
     return False
 
 return True
@@ -33,16 +33,16 @@ return True
 import sys
 import os
 
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 node = kwargs["node"]
 
 versiondb=False
-cloud_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs, versiondb)
+firehawk_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs, versiondb)
 ]]>
         </scriptCode>
         </scriptItem>
@@ -58,15 +58,15 @@ cloud_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs, ver
 import sys
 import os
 
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 node = kwargs["node"]
 type_name = node.type().name()
 
-if type_name not in cloud_submit.submit(node).output_types and type_name != 'ropfetch':
+if type_name not in firehawk_submit.submit(node).output_types and type_name != 'ropfetch':
     return False
 
 return True
@@ -79,16 +79,16 @@ return True
 import sys
 import os
 
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 node = kwargs["node"]
 
 versiondb=True
-cloud_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs, versiondb)
+firehawk_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs, versiondb)
 ]]>
         </scriptCode>
         </scriptItem>
@@ -118,15 +118,15 @@ print "Assign Node For TOPNET Preflight"
 import sys
 
 import os
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 node = kwargs["node"]
 
-cloud_submit.submit(node).assign_preflight()
+firehawk_submit.submit(node).assign_preflight()
 ]]>
         </scriptCode>
         </scriptItem>
@@ -157,14 +157,14 @@ arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 import sys
 
 import os
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 node = kwargs["node"]
 
-cloud_submit.submit(node).dirty_upstream_source_nodes()
+firehawk_submit.submit(node).dirty_upstream_source_nodes()
 ]]>
         </scriptCode>
         </scriptItem>
@@ -196,14 +196,14 @@ arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 import sys
 
 import os
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 node = kwargs["node"]
 
-cloud_submit.submit(node).cook()
+firehawk_submit.submit(node).cook()
 ]]>
         </scriptCode>
         </scriptItem>

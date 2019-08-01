@@ -1,10 +1,10 @@
             ### version tracking: write version attr before json file is created, and set version on multiparm for rop.
-            
+
             # requires hou
             # ensure this is located just before self.createJobDirsAndSerializeWorkItems(work_item) in a scheduler.  Tested with the local scheduler and deadline.
 
             # Provided the correct multiparm and callback is initialised on a rop, this will set the version on the multiparm when the workitem is scheduled based on the key template.
-            # ensure the node callback from cloud_submit.py is functioning as this is required for house cleaning of the userDataDict to lookup the versions.
+            # ensure the node callback from firehawk_submit.py is functioning as this is required for house cleaning of the userDataDict to lookup the versions.
             print "set int version"
             hip_path = work_item.data.stringData('hip', 0)
             rop_path = work_item.data.stringData('rop', 0)

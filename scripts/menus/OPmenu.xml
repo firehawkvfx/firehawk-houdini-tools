@@ -169,6 +169,44 @@ firehawk_submit.submit(node).dirty_upstream_source_nodes()
         </scriptCode>
         </scriptItem>
     </menu>
+    ### Protect Upstream Workitem Directories ###
+    <menu>
+        <scriptItem id="opmenu.protect_upstream_workitem_directories">
+        <label>Protect Upstream Workitem Directories</label>
+        <context>
+        <expression>
+<![CDATA[
+### Determine if item is visible ###
+
+node = kwargs["node"]
+category = node.type().category().name()
+
+if category != 'Top':
+    return False
+
+return True
+]]>
+        </expression>
+        </context>
+        <scriptCode>
+<![CDATA[
+arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+
+import sys
+
+import os
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
+sys.path.append(menu_path)
+
+import firehawk_submit as firehawk_submit
+
+node = kwargs["node"]
+
+firehawk_submit.submit(node).protect_upstream_workitem_directories()
+]]>
+        </scriptCode>
+        </scriptItem>
+    </menu>
     ### Submit With Preflight ###
     <menu>
         <scriptItem id="opmenu.submit_with_preflight">

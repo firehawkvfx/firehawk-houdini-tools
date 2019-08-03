@@ -225,49 +225,143 @@ class submit():
                 # save again with original name.
                 hou.hipFile.save(self.hip_path)
 
+    def get_upstream_workitems(self):
+        # this will generate the selected workitems
+        self.pdg_node = self.node.getPDGNode()
+        self.node.executeGraph(False, False, False, True)
+        
+        added_workitems = []
+
+        added_nodes = []
+        added_node_dependencies = []
+
+        def append_node_dependencies(node):
+            added_node_dependencies.append(node)
+            if len(node.inputs) > 0:
+                for input in node.inputs:
+                    input_connections = input.connections
+                    print "input_connections", input_connections
+                    if len(input_connections) > 0:
+                        for connection in input_connections:
+                            dependency = connection.node
+                            if dependency not in added_nodes:
+                                added_nodes.append(dependency)
+
+        
+        added_nodes.append(self.pdg_node)
+        for node in added_nodes:
+            append_node_dependencies(node)
+        diff_list = np.setdiff1d(added_nodes, added_node_dependencies)
+        
+        while len(diff_list) > 0:
+            for node in diff_list:
+                append_node_dependencies(node)
+            diff_list = np.setdiff1d(
+                added_nodes, added_node_dependencies)
+
+        print "added_nodes", added_nodes
+
+        for node in added_nodes:
+            for workitem in node.workItems:
+                added_workitems.append(workitem)
+
+        return added_workitems
+
+    def protect_upstream_workitem_directories(self):
+        added_workitems = self.get_upstream_workitems()
+        # nodes - inputs[0].connections[0].node.inputs[0].connections[0].node
+
+        def touch(path):
+            with open(path, 'a'):
+                os.utime(path, None)
+
+        def get_size(start_path = None):
+            total_size = 0
+            for dirpath, dirnames, filenames in os.walk(start_path):
+                for f in filenames:
+                    fp = os.path.join(dirpath, f)
+                    # skip if it is symbolic link
+                    if not os.path.islink(fp):
+                        total_size += os.path.getsize(fp)
+            return total_size
+
+        def sizeof_fmt(num, suffix='B'):
+            for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+                if abs(num) < 1024.0:
+                    return "%3.1f%s%s" % (num, unit, suffix)
+                num /= 1024.0
+            return "%.1f%s%s" % (num, 'Yi', suffix)
+        
+        protect_dirs = []
+        sizes = []
+
+        for work_item in added_workitems:
+            result_data_list = work_item.resultData
+            for result_data in result_data_list:
+                path = result_data[0]
+                path_dir = os.path.split(path)[0]
+                if path_dir not in protect_dirs:
+                    protect_dirs.append(path_dir)
+                    protect_file = os.path.join(path_dir, '.protect')
+                    touch(protect_file)
+                    size = get_size(path_dir)
+                    print "add .protect file into protect_dir:", path_dir, sizeof_fmt(size)
+                    sizes.append( size )
+
+
+        
+        total_size = sizeof_fmt(sum(sizes))
+        print "total_size", total_size
+        
+        
+
     def dirty_upstream_source_nodes(self):
         # this will generate the selected workitems
         print "Dirty Upstream Source Nodes"
-        self.pdg_node = self.node.getPDGNode()
+        # self.pdg_node = self.node.getPDGNode()
 
-        self.node.executeGraph(False, False, False, True)
+        # self.node.executeGraph(False, False, False, True)
 
-        self.source_top_nodes = []
-        self.added_workitems = []
-        self.added_dependencies = []
+        
+        # self.added_workitems = []
+        # self.added_dependencies = []
 
-        def append_workitems(node):
-            if len(node.workItems) > 0:
-                for workitem in node.workItems:
-                    if workitem not in self.added_workitems:
-                        self.added_workitems += [workitem]
+        # def append_workitems(node):
+        #     if len(node.workItems) > 0:
+        #         for workitem in node.workItems:
+        #             if workitem not in self.added_workitems:
+        #                 self.added_workitems += [workitem]
 
-        def append_dependencies(workitem):
-            self.added_dependencies += [workitem]
-            if len(workitem.dependencies) > 0:
-                for dependency in workitem.dependencies:
-                    if dependency not in self.added_workitems:
-                        self.added_workitems += [dependency]
+        # def append_dependencies(workitem):
+        #     self.added_dependencies += [workitem]
+        #     if len(workitem.dependencies) > 0:
+        #         for dependency in workitem.dependencies:
+        #             if dependency not in self.added_workitems:
+        #                 self.added_workitems += [dependency]
 
-        append_workitems(self.pdg_node)
+        # append_workitems(self.pdg_node)
 
-        for workitem in self.added_workitems:
-            append_dependencies(workitem)
+        # for workitem in self.added_workitems:
+        #     append_dependencies(workitem)
 
-        diff_list = np.setdiff1d(self.added_workitems, self.added_dependencies)
+        # diff_list = np.setdiff1d(self.added_workitems, self.added_dependencies)
+        
+        # # keep comparing work items for processed nodes with dependencies.  once the two lists are equal then all dependencies are tracked.
+        # while len(diff_list) > 0:
+        #     for workitem in diff_list:
+        #         append_dependencies(workitem)
+        #     diff_list = np.setdiff1d(
+        #         self.added_workitems, self.added_dependencies)
 
-        while len(diff_list) > 0:
-            for workitem in diff_list:
-                append_dependencies(workitem)
-            diff_list = np.setdiff1d(
-                self.added_workitems, self.added_dependencies)
+        added_workitems = self.get_upstream_workitems()
 
-        for workitem in self.added_workitems:
+        source_top_nodes = []
+        for workitem in added_workitems:
             if len(workitem.dependencies) == 0:
-                if workitem.node not in self.source_top_nodes:
-                    self.source_top_nodes += [workitem.node]
+                if workitem.node not in source_top_nodes:
+                    source_top_nodes.append(workitem.node)
 
-        for source_top_node in self.source_top_nodes:
+        for source_top_node in source_top_nodes:
             source_top_node.dirty(False)
             print "Dirtied source_top_node", source_top_node.name
 
@@ -542,33 +636,36 @@ firehawk_submit.submit(node).multiparm_housecleaning( node, multiparm_count )
                         print "int hou_parm", hou_parm
                         hou_parm.lock(False)
                         hou_parm.setAutoscope(False)
-                        hou_keyframe = hou.Keyframe()
-                        hou_keyframe.setTime(0)
-                        ver_expr = \
-                            """
-# This allows versioning to be inherited by the multi parm db
-import hou
-import re
 
-node = hou.pwd()
-parm = hou.evaluatingParm()
+                        if versiondb:
+                            # set expression for version to look up db if enabled
+                            hou_keyframe = hou.Keyframe()
+                            hou_keyframe.setTime(0)
+                            ver_expr = \
+                                """
+    # This allows versioning to be inherited by the multi parm db
+    import hou
+    import re
 
-index_key = node.parm('index_key_template').eval()
-multiparm_index = node.userData('verdb_'+index_key)
+    node = hou.pwd()
+    parm = hou.evaluatingParm()
 
-version = 0
+    index_key = node.parm('index_key_template').eval()
+    multiparm_index = node.userData('verdb_'+index_key)
 
-if multiparm_index is not None:
-    multiparm_index = str(multiparm_index)
-    version_parm = node.parm('version'+multiparm_index)
-    if version_parm is not None:
-        version = version_parm.eval()        
+    version = 0
 
-return version
-"""
-                        hou_keyframe.setExpression(
-                            ver_expr, hou.exprLanguage.Python)
-                        hou_parm.setKeyframe(hou_keyframe)
+    if multiparm_index is not None:
+        multiparm_index = str(multiparm_index)
+        version_parm = node.parm('version'+multiparm_index)
+        if version_parm is not None:
+            version = version_parm.eval()        
+
+    return version
+    """
+                            hou_keyframe.setExpression(
+                                ver_expr, hou.exprLanguage.Python)
+                            hou_parm.setKeyframe(hou_keyframe)
 
                         hou_parm = node.parm("versionstr")
                         hou_parm.lock(False)

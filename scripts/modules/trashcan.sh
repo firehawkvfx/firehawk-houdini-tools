@@ -7,10 +7,14 @@ echo "current dir $current_dir"
 base_dir=$(pwd | cut -d/ -f1-2)
 echo "base_dir $base_dir"
 
+
 source=$(realpath --relative-to=$base_dir $current_dir)/
 echo "source $source"
 target=trash/
 echo "target $target"
+
+# ensure trash exists at base dir.
+mkdir -p $base_dir/$target
 
 find . -name .protect -print0 |
     while IFS= read -r -d '' line; do

@@ -66,10 +66,8 @@ class syncfile():
         self.s3_args = ['s3', 'sync', self.dirname, self.bucketdirname, '--exclude', '*', '--include', self.filename]
         if self.quiet:
           self.s3_args.append('--quiet')
-
         print 'args', self.s3_args
         self.cli_operation = self.aws_cli( self.s3_args )
-        #print self.cli_operation
     self.pushed = True
 
   def local_pull(self):
@@ -81,9 +79,6 @@ class syncfile():
         self.s3_args = ['s3', 'sync', self.bucketdirname, self.dirname, '--exclude', '*', '--include', self.filename]
         if self.quiet:
           self.s3_args.append('--quiet')
-
         print 'args', self.s3_args
         self.cli_operation = self.aws_cli( self.s3_args )
-        #print self.cli_operation
-    # upload to s3
     self.pulled = True

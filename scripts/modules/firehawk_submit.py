@@ -155,8 +155,8 @@ class submit():
 
             ### save before preflight ###
 
-            timestamp_submission = True
-
+            timestamp_submission = False
+            
             self.submit_name = self.hip_path
 
             if timestamp_submission:
@@ -168,6 +168,7 @@ class submit():
                 self.submit_name = "{dir}/{base}.{date}.hip".format(
                     dir=self.hip_dirname, base=self.hip_basename, date=timestampStr)
 
+            print "save", self.submit_name
             hou.hipFile.save(self.submit_name)
 
             if self.preflight_node:
@@ -186,7 +187,7 @@ class submit():
                             self.graph_context.removeEventHandler(self.handler)
 
                             ### save after preflight ###
-                            hou.hipFile.save(self.submit_name)
+                            #hou.hipFile.save(self.submit_name)
                             ### refresh workitems for main job node ###
                             self.node.executeGraph(False, False, False, True)
 
@@ -198,7 +199,8 @@ class submit():
                                     "Failed to cook, try initiliasing the node first with a standard cook / generate.")
 
                             # Save again with restored original name.
-                            hou.hipFile.save(self.hip_path)
+                            if timestamp_submission:
+                                hou.hipFile.save(self.hip_path)
                         else:
                             print 'error preflight_status is not "cooking", this function should not be called', self.preflight_status
 
@@ -223,7 +225,8 @@ class submit():
                     hou.ui.displayMessage(
                         "Failed to cook, try initiliasing the node first with a standard cook / generate.")
                 # save again with original name.
-                hou.hipFile.save(self.hip_path)
+                if timestamp_submission:
+                    hou.hipFile.save(self.hip_path)
 
     def get_upstream_workitems(self):
         # this will generate the selected workitems
@@ -297,6 +300,8 @@ class submit():
 
         for work_item in added_workitems:
             result_data_list = work_item.resultData
+            expected_result_data_list = work_item.expectedResultData
+
             for result_data in result_data_list:
                 path = result_data[0]
                 path_dir = os.path.split(path)[0]
@@ -307,6 +312,18 @@ class submit():
                     size = get_size(path_dir)
                     print "add .protect file into protect_dir:", path_dir, sizeof_fmt(size)
                     sizes.append( size )
+            
+            for result_data in expected_result_data_list:
+                path = result_data[0]
+                path_dir = os.path.split(path)[0]
+                if path_dir not in protect_dirs:
+                    protect_dirs.append(path_dir)
+                    protect_file = os.path.join(path_dir, '.protect')
+                    touch(protect_file)
+                    size = get_size(path_dir)
+                    print "add .protect file into protect_dir:", path_dir, sizeof_fmt(size)
+                    sizes.append( size )
+
 
 
         
@@ -549,7 +566,7 @@ class submit():
                             "versionstr", "Version String", 1, [""]))
 
                         parm_folder.addParmTemplate(hou.StringParmTemplate(
-                            "wedge_string", "Wedge String", 1, ["w`@wedgenum`"]))
+                            "wedge_string", "Wedge String", 1, ["w`int(@wedgenum)`"]))
 
                         parm_folder.addParmTemplate(hou.StringParmTemplate(
                             "output_type", "Output Type", 1, [lookup['type_path']]))

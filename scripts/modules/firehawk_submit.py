@@ -17,7 +17,7 @@ from collections import namedtuple
 from distutils.spawn import find_executable
 from multiprocessing import cpu_count
 
-from pdg import createHarsServer, createProcessJob, scheduleResult
+from pdg import createProcessJob, scheduleResult
 from pdg.job.callbackserver import CallbackServerMixin
 from pdg.scheduler import PyScheduler, convertEnvMapToUTF8
 from pdg.staticcook import StaticCookMixin
@@ -38,8 +38,7 @@ import datetime
 
 from shutil import copyfile
 
-#####
-
+#####    
 
 class submit():
     def __init__(self, node=''):
@@ -129,6 +128,7 @@ class submit():
         # set values for path to preflight node.
 
         self.parent.parm("preflight_node").set(self.node.path())
+
 
     def cook(self):
         # all preview switches set to 0.  switch nodes starting with name "preview" are usefull for interactivve session testing only, but will revert to input 0 upon farm submission.

@@ -180,6 +180,7 @@ class submit():
                     print "cooking preflight", self.preflight_node.path()
 
                     def cook_done(event):
+                        print 'cook done'
                         if self.preflight_status == 'cooking':
                             print "event", event.node, event.message
                             self.preflight_status == 'done'
@@ -203,11 +204,10 @@ class submit():
                                 hou.hipFile.save(self.hip_path)
                         else:
                             print 'error preflight_status is not "cooking", this function should not be called', self.preflight_status
-
+                    print 'setup handler'
                     ### setup handler before executing preflight ###
                     self.graph_context = self.preflight_node.getPDGGraphContext()
-                    self.handler = self.graph_context.addEventHandler(
-                        cook_done, pdg.EventType.CookComplete)
+                    self.handler = self.graph_context.addEventHandler(cook_done, pdg.EventType.CookComplete)
                     ### cook preflight ###
                     self.preflight_status = 'cooking'
                     self.preflight_node.getPDGNode().cook(False)

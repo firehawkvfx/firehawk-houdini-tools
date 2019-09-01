@@ -45,7 +45,8 @@ def setup_logger(name, log_file, level=logging.INFO):
     return logger
 
 # first file logger
-logger = setup_logger('first_logger', '/var/tmp/first_logfile.log')
+logger = setup_logger('first_logger', '/var/tmp/pre_job_logfile.log')
+logger.info('start log')
 
 # second file logger
 super_logger = setup_logger('second_logger', '/var/tmp/second_logfile.log')

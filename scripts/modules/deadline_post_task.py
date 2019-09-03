@@ -14,9 +14,9 @@ from Deadline.Plugins import *
 
 from FranticX.Processes import *
 
-hfs=os.environ['HFS']
-print 'hfs:', hfs
-houpythonlib = os.path.join(hfs, 'houdini/python2.7libs')
+hfs_env=os.environ['HFS']
+print 'hfs_env:', hfs_env
+houpythonlib = os.path.join(hfs_env, 'houdini/python2.7libs')
 print 'houpythonlib:', houpythonlib
 sys.path.append(houpythonlib)
 
@@ -26,6 +26,7 @@ sys.path.append(houpythonlib)
 sys.path.append('/usr/lib64/python2.7/site-packages')
 sys.path.append('/home/deadlineuser/.local/lib/python2.7/site-packages')
 sys.path.append('/usr/lib/python2.7/site-packages')
+
 # menu_path = os.path.join(os.environ['FIREHAWK_HOUDINI_TOOLS'], 'scripts/s3_sync')
 # print 'menu_path', menu_path
 # sys.path.append(menu_path)
@@ -33,10 +34,22 @@ sys.path.append('/usr/lib/python2.7/site-packages')
 # print 'module_path', module_path
 # sys.path.append(module_path)
 
-# import pdgcmd
+import pdgcmd
 
 def __main__(plugin, task_type):
     print 'main post task'
+    # if hfs_env:
+    #     # Append $PYTHONPATH if not set
+    #     houdini_python_libs = houpythonlib
+    #     python_path = GetProcessEnvironmentVariable('PYTHONPATH')
+    #     if python_path:
+    #         if not houdini_python_libs in python_path:
+    #             python_path.append(path_combine + houdini_python_libs)
+    #     else:
+    #         python_path = houdini_python_libs
+
+    #     LogInfo('Setting PYTHONPATH: {}'.format(python_path))
+    #     SetProcessEnvironmentVariable('PYTHONPATH', python_path)
     # itemname = None
     # callbackserver = None
 

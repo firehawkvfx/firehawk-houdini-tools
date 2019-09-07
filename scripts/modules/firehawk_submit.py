@@ -51,7 +51,8 @@ class submit():
         self.preflight_path = None
         self.parm_group = None
         self.found_folder = None
-        self.graph_context = None
+        self.handler = None
+        self.preflight_pdg_node = None
 
         self.preflight_status = None
 
@@ -132,7 +133,7 @@ class submit():
 
     def cook(self):
         # all preview switches set to 0.  switch nodes starting with name "preview" are usefull for interactivve session testing only, but will revert to input 0 upon farm submission.
-
+        print 'cook'
         for node in hou.node('/').allSubChildren():
             if node.name().startswith('preview'):
                 print 'disable preview switch', node.path()
@@ -185,7 +186,7 @@ class submit():
                             print "event", event.node, event.message
                             self.preflight_status == 'done'
                             ### remove handler since the main job is about to execute, and we dont need this anymore. ###
-                            self.graph_context.removeEventHandler(self.handler)
+                            self.preflight_pdg_node.removeEventHandler(self.handler)
 
                             ### save after preflight ###
                             #hou.hipFile.save(self.submit_name)
@@ -204,10 +205,11 @@ class submit():
                                 hou.hipFile.save(self.hip_path)
                         else:
                             print 'error preflight_status is not "cooking", this function should not be called', self.preflight_status
+
                     print 'setup handler'
                     ### setup handler before executing preflight ###
-                    self.graph_context = self.preflight_node.getPDGGraphContext()
-                    self.handler = self.graph_context.addEventHandler(cook_done, pdg.EventType.CookComplete)
+                    self.preflight_pdg_node = self.preflight_node.getPDGNode()
+                    self.handler = self.preflight_pdg_node.addEventHandler(cook_done, pdg.EventType.CookComplete)
                     ### cook preflight ###
                     self.preflight_status = 'cooking'
                     self.preflight_node.getPDGNode().cook(False)

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="convert_selection_to_relative_paths" label="Convert Selection To Relative Paths" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[# This tool assumes all paths are one level deep before converting absolute paths to relative paths.  
+# It wont convert paths to relative between /obj/object1 and /obj/object2
+# It's designed to help workflows where an entire element / shot is contained in 1 subnet such as - /obj/element
+
+import hou
+
+list = hou.selectedNodes()
+for parent in list:
+    list += parent.children()
+    
+#    
+#print "list", list
+#for node in list:
+#    print "list node", node.name()
+
+for node in list:
+    root = node.path().split('/')[2]
+    print root
+    for parm in node.parms():
+        try:
+            parm_eval = parm.eval()
+            if isinstance(parm_eval, basestring):
+                ref_list = parm_eval.split(' ')
+                ref_list_out = []
+                for ref in ref_list:
+                    if ref.startswith('/obj/'+root):
+                        print parm.name(), 'ref to', ref
+                        target = node.node(ref)
+                        relative_path = node.relativePathTo(target)
+                        print 'relative_path', relative_path
+                        ref_list_out += [relative_path]
+                    elif parm_eval.startswith('/obj/'):
+                        print 'will not convert path to another root element', parm.name(), 'is', parm_eval
+                if len(ref_list_out) > 0:
+                    relative_paths_out = ' '.join(ref_list_out)
+                    print 'relative_paths_out', relative_paths_out
+                    parm.set(relative_paths_out)
+        except:
+            print 'could not set path for', parm.path()
+]]></script>
+  </tool>
+</shelfDocument>

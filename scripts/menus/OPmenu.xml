@@ -3,8 +3,8 @@
 <menuDocument>
     # Update Rop Output Paths for Selected SOP/TOP Nodes
     <menu>
-        <scriptItem id="opmenu.update_rop_output_paths_for_selected_nodes">
-        <label>Update Rop Output Paths for Selected SOP/TOP Nodes</label>
+        <scriptItem id="opmenu.update_rop_template_for_selected_nodes">
+        <label>Update Rop Template for Selected SOP/TOP Nodes</label>
         <context>
         <expression>
 <![CDATA[
@@ -12,15 +12,15 @@
 import sys
 import os
 
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 node = kwargs["node"]
 type_name = node.type().name()
 
-if type_name not in cloud_submit.submit(node).output_types and type_name != 'ropfetch':
+if type_name not in firehawk_submit.submit(node).output_types and type_name != 'ropfetch':
     return False
 
 return True
@@ -33,15 +33,62 @@ return True
 import sys
 import os
 
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 node = kwargs["node"]
 
-cloud_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs)
+versiondb=False
+firehawk_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs, versiondb)
+]]>
+        </scriptCode>
+        </scriptItem>
+    </menu>
+    # Multiparm version tracking
+    <menu>
+        <scriptItem id="opmenu.versiondb_update_rop_template_for_selected_nodes">
+        <label>VersionDB Update Rop Template for Selected SOP/TOP Nodes</label>
+        <context>
+        <expression>
+<![CDATA[
+### Determine if item is visible ###
+import sys
+import os
+
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
+sys.path.append(menu_path)
+
+import firehawk_submit as firehawk_submit
+
+node = kwargs["node"]
+type_name = node.type().name()
+
+if type_name not in firehawk_submit.submit(node).output_types and type_name != 'ropfetch':
+    return False
+
+return True
+]]>
+        </expression>
+        </context>
+        <scriptCode>
+<![CDATA[
+
+import sys
+import os
+
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
+sys.path.append(menu_path)
+
+import firehawk_submit as firehawk_submit
+
+arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+node = kwargs["node"]
+
+versiondb=True
+firehawk_submit.submit(node).update_rop_output_paths_for_selected_nodes(kwargs, versiondb)
 ]]>
         </scriptCode>
         </scriptItem>
@@ -71,15 +118,15 @@ print "Assign Node For TOPNET Preflight"
 import sys
 
 import os
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 node = kwargs["node"]
 
-cloud_submit.submit(node).assign_preflight()
+firehawk_submit.submit(node).assign_preflight()
 ]]>
         </scriptCode>
         </scriptItem>
@@ -110,14 +157,52 @@ arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 import sys
 
 import os
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 node = kwargs["node"]
 
-cloud_submit.submit(node).dirty_upstream_source_nodes()
+firehawk_submit.submit(node).dirty_upstream_source_nodes()
+]]>
+        </scriptCode>
+        </scriptItem>
+    </menu>
+    ### Protect Upstream Workitem Directories ###
+    <menu>
+        <scriptItem id="opmenu.protect_upstream_workitem_directories">
+        <label>Protect Upstream Workitem Directories</label>
+        <context>
+        <expression>
+<![CDATA[
+### Determine if item is visible ###
+
+node = kwargs["node"]
+category = node.type().category().name()
+
+if category != 'Top':
+    return False
+
+return True
+]]>
+        </expression>
+        </context>
+        <scriptCode>
+<![CDATA[
+arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
+
+import sys
+
+import os
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
+sys.path.append(menu_path)
+
+import firehawk_submit as firehawk_submit
+
+node = kwargs["node"]
+
+firehawk_submit.submit(node).protect_upstream_workitem_directories()
 ]]>
         </scriptCode>
         </scriptItem>
@@ -149,14 +234,14 @@ arguments2 = '\n  '.join(['%s = %s' % (k,w) for (k,w) in kwargs.items()])
 import sys
 
 import os
-menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/menus'
+menu_path = os.environ['FIREHAWK_HOUDINI_TOOLS'] + '/scripts/modules'
 sys.path.append(menu_path)
 
-import cloud_submit as cloud_submit
+import firehawk_submit as firehawk_submit
 
 node = kwargs["node"]
 
-cloud_submit.submit(node).cook()
+firehawk_submit.submit(node).cook()
 ]]>
         </scriptCode>
         </scriptItem>

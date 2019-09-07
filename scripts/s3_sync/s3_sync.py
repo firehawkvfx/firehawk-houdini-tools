@@ -8,7 +8,8 @@ import os
 import sys
 
 sys.path.append('/usr/lib64/python2.7/site-packages')
-sys.path.append('/home/deadlineuser/.local/lib/python2.7/site-packages')
+home_site_packages = os.path.expanduser('~/.local/lib/python2.7/site-packages')
+sys.path.append(home_site_packages)
 sys.path.append('/usr/lib/python2.7/site-packages')
 
 from awscli.clidriver import create_clidriver
@@ -65,10 +66,8 @@ class syncfile():
         self.s3_args = ['s3', 'sync', self.dirname, self.bucketdirname, '--exclude', '*', '--include', self.filename]
         if self.quiet:
           self.s3_args.append('--quiet')
-
         print 'args', self.s3_args
         self.cli_operation = self.aws_cli( self.s3_args )
-        #print self.cli_operation
     self.pushed = True
 
   def local_pull(self):
@@ -80,9 +79,6 @@ class syncfile():
         self.s3_args = ['s3', 'sync', self.bucketdirname, self.dirname, '--exclude', '*', '--include', self.filename]
         if self.quiet:
           self.s3_args.append('--quiet')
-
         print 'args', self.s3_args
         self.cli_operation = self.aws_cli( self.s3_args )
-        #print self.cli_operation
-    # upload to s3
     self.pulled = True

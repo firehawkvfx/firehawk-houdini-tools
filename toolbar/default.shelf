@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <toolshelf name="test" label="test">
+    <memberTool name="test"/>
+  </toolshelf>
+
+  <tool name="protect_output_sop_paths" label="Protect Output Sop Paths" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[import hou
+import os
+
+# folders with .protect files in them are excluded from the trashcan.sh removal process for cleanup.
+# alternatively, you can right click to protect outputs on a top net by selecting the bottom most node (ensure everything is cooked/generated)
+# and right click to protect the outputs.
+
+selected = hou.selectedNodes()
+
+def touch(path):
+    with open(path, 'a'):
+        os.utime(path, None)
+
+for node in selected:
+    if node.type().name()=='rop_geometry':
+        path = node.parm('sopoutput').eval()
+        path = os.path.split(path)[0]
+        protect_path = os.path.join(path, ".protect")
+        print "path", protect_path
+        touch(protect_path)]]></script>
+  </tool>
+</shelfDocument>

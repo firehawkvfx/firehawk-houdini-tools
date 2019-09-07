@@ -5,14 +5,8 @@ import sys
 import json
 import re
 
-from System import DateTime, TimeSpan
-from System.IO import *
-from System.Text.RegularExpressions import *
-
 from Deadline.Scripting import *
 from Deadline.Plugins import *
-
-from FranticX.Processes import *
 
 hfs_env=os.environ['HFS']
 print 'hfs_env:', hfs_env
@@ -27,17 +21,42 @@ sys.path.append('/usr/lib64/python2.7/site-packages')
 sys.path.append('/home/deadlineuser/.local/lib/python2.7/site-packages')
 sys.path.append('/usr/lib/python2.7/site-packages')
 
-# menu_path = os.path.join(os.environ['FIREHAWK_HOUDINI_TOOLS'], 'scripts/s3_sync')
-# print 'menu_path', menu_path
-# sys.path.append(menu_path)
-# module_path = os.path.join(os.environ['FIREHAWK_HOUDINI_TOOLS'], 'scripts/modules')
-# print 'module_path', module_path
-# sys.path.append(module_path)
+# import pdgcmd
 
-import pdgcmd
-
-def __main__(plugin, task_type):
+def __main__( *args ):
+    
     print 'main post task'
+    
+    deadlinePlugin = args[0]
+    job = deadlinePlugin.GetJob()
+
+    deadlinePlugin.LogInfo(str(args))
+    
+    # for item in args:
+    #     deadlinePlugin.LogInfo(str(item))
+
+    deadlinePlugin.LogInfo("In Test Task!")
+
+    for item in dir(job):
+
+        deadlinePlugin.LogInfo(str(item))
+        if 'get' in str(item).lower():
+            try:
+                method = 'job.'+str(item)+'()'
+                test = eval(method)
+                deadlinePlugin.LogInfo(str(test))
+            except:
+                test = None
+
+    deadlinePlugin.LogInfo("job.GetOutputFileNamesForTask()")
+    deadlinePlugin.LogInfo(str(job.GetOutputFileNamesForTask))
+    deadlinePlugin.LogInfo(str(job.GetOutputFileNamesForTask()))
+    #deadlinePlugin.LogInfo(dir(job.GetOutputFileNamesForTask()))
+    
+    # for item in job:
+    #     deadlinePlugin.LogInfo(str(item))
+
+
     # if hfs_env:
     #     # Append $PYTHONPATH if not set
     #     houdini_python_libs = houpythonlib

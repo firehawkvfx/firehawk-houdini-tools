@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="version_up_hip" label="Version Up Hip" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[import hou
+import glob
+import os
+import sys
+sys.path.append('/usr/lib64/python2.7/re.pyc')
+import re
+
+print 
+hipname_split = hou.hipFile.path().split("_")
+file_name = os.path.split(hou.hipFile.path())[1]
+lead_name = re.split(r"_v[0-9][0-9][0-9]?.?[0-9]?[0-9]?[0-9]_", file_name)[0]
+dir_name = os.path.split(hou.hipFile.path())[0]
+
+print hipname_split
+
+### get description for file.
+try:
+    description = hou.hscriptExpression('$DESCRIPTION')
+except:
+    description = ''
+
+description_tuple = hou.ui.readInput('Provide a brief description for the hip.', buttons=('OK','Cancel'), title='Description', initial_contents=description)
+
+# if ok selected
+if description_tuple[0] == 0:
+    description = description_tuple[1].replace(' ', '_')
+    # set env var for description
+    hou.hscript("set -g %s = %s"%("DESCRIPTION", str(description) ) )
+
+    found_version = False
+    i = -1
+    while (found_version == False) and (i < len(hipname_split)-1):
+        i += 1
+        test_string = hipname_split[i].split('.')[0]
+        found_version = False
+        if test_string.startswith('v'):
+            found_version = test_string.replace('v', '').isdigit()
+            version_int = int(test_string.replace('v', ''))
+        
+    if found_version:
+        get_version= hipname_split[i].split('.')
+        # find existing files
+        existing_files = glob.glob(dir_name+'/'+lead_name+'*_v[0-9][0-9][0-9].*')
+        found_versions = []
+        for file in existing_files:
+            file_split = file.split('_')
+            # print 'test file', file
+            file_found_version = False
+            i = -1
+            while (file_found_version == False) and (i < len(file_split)-1):
+                i += 1
+                test_string = file_split[i].split('.')[0]
+                file_found_version = False
+                if test_string.startswith('v'):
+                    file_found_version = test_string.replace('v', '').isdigit()
+                    file_version_int = int(test_string.replace('v', ''))
+                    found_versions += [file_version_int]
+        #print 'found versions', found_versions
+        print 'Max version in path', max(found_versions)
+        version_int = max(found_versions)
+        #print existing_files
+        # increment version
+        get_version[0] = 'v'+str(version_int+1).zfill(3)
+        hipname_split[i] = '.'.join(get_version)
+        outfile = '_'.join(hipname_split)
+        version_string = get_version[0]
+        
+        print 'increment version to', version_string
+        #set env variables
+        hou.hscript("set -g %s = %s"%("VER", version_string ) )
+        
+        control = hou.node('/obj/control1')
+        if control:
+            control.parm('version').set(version_string)
+            version_parm = control.parm('version').eval()
+            print 'version_parm on control set to', version_parm
+        #hou.parm('/obj/control1/setenv').pressButton()
+        
+        ### pulled from save file.
+        prod_path = '/prod'
+        show = hou.hscriptExpression('$SHOW')
+        seq = hou.hscriptExpression('$SEQ')
+        shot = hou.hscriptExpression('$SHOT')
+        version = hou.hscriptExpression('$VER')
+        minor_version = hou.hscriptExpression('$MINOR_VER')
+        scenename = hou.hscriptExpression('$SCENENAME')
+        user = hou.hscriptExpression('$USER')
+        # description = hou.hscriptExpression('$DESCRIPTION')
+        if (not version.replace('v', '').isdigit()):
+            version='v001'
+            minor_version = '000'
+        
+        if (not minor_version.isdigit()):
+            version='v001'
+            minor_version = '000'
+        version_out = '.'.join([version, minor_version])
+        
+        out_basename = '_'.join([show, seq, shot, 'wrk', scenename, version_out, user, description])+'.hip'
+        outfile = '/'.join([prod_path, show, seq, shot, 'houdini', out_basename])
+            
+        save = hou.hipFile.save(outfile)
+        #print 'save', save
+    else:
+        hou.ui.displayMessage("Couldn't resolve version from hipname")]]></script>
+  </tool>
+</shelfDocument>

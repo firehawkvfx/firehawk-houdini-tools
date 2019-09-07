@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <toolshelf name="openfirehawk" label="Open Firehawk">
+    <memberTool name="version_up_hip"/>
+    <memberTool name="save_hip"/>
+    <memberTool name="replace_rop_inputs"/>
+    <memberTool name="convert_selection_to_relative_paths"/>
+    <memberTool name="find_locked_nodes"/>
+    <memberTool name="protect_output_sop_paths"/>
+  </toolshelf>
+</shelfDocument>

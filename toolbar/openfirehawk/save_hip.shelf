@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="save_hip" label="Save Hip" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[import hou
+prod_path = '/prod'
+show = hou.hscriptExpression('$SHOW')
+seq = hou.hscriptExpression('$SEQ')
+shot = hou.hscriptExpression('$SHOT')
+version = hou.hscriptExpression('$VER')
+minor_version = hou.hscriptExpression('$MINOR_VER')
+scenename = hou.hscriptExpression('$SCENENAME')
+user = hou.hscriptExpression('$USER')
+description = hou.hscriptExpression('$DESCRIPTION')
+if (not version.replace('v', '').isdigit()):
+    version='v001'
+    minor_version = '000'
+
+if (not minor_version.isdigit()):
+    version='v001'
+    minor_version = '000'
+version_out = '.'.join([version, minor_version])
+
+out_basename = '_'.join([show, seq, shot, 'wrk', scenename, version_out, user, description])+'.hip'
+outfile = '/'.join([prod_path, show, seq, shot, 'houdini', out_basename])
+
+print 'saving', outfile
+
+import os
+import errno
+
+#filename = "/foo/bar/baz.txt"
+if not os.path.exists(os.path.dirname(outfile)):
+    try:
+        os.makedirs(os.path.dirname(outfile))
+    except OSError as exc: # Guard against race condition
+        if exc.errno != errno.EEXIST:
+            raise
+
+hou.hipFile.save(outfile)]]></script>
+  </tool>
+</shelfDocument>

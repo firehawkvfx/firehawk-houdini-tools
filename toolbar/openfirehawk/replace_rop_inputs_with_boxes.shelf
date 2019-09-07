@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelfDocument>
+  <!-- This file contains definitions of shelves, toolbars, and tools.
+ It should not be hand-edited when it is being used by the application.
+ Note, that two definitions of the same element are not allowed in
+ a single file. -->
+
+  <tool name="replace_rop_inputs" label="Replace Rop Inputs With Boxes" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[import hou
+
+# this tool is to make it easier to share networks with side fx for debugging tops by cleaning out sop geo inputs.
+
+selected = hou.selectedNodes()
+ropnodes = []
+preserve = []
+for node in selected:
+    preserve += [node]
+    if node.type().name() == 'ropfetch':
+        target = node.parm('roppath').eval()
+        print 'target', target
+        target_node = node.node(target)
+        if target_node != None:
+            print 'target_node', target_node
+            if target_node.type().name() == 'rop_geometry':
+                ropnodes += [target_node]
+                preserve += [target_node]
+            else:
+                print 'did not replace input for', node.name()
+
+
+for node in ropnodes:
+    position = node.position() + hou.Vector2(0, 1)
+    hou_parent = node.parent()
+    hou_node = hou_parent.createNode("box", "box_temp", run_init_scripts=False, load_contents=True, exact_type_name=True)
+    preserve += [hou_node]
+    hou_node.move(position)
+    node.setInput(0, hou_node, 0)
+    
+cleanup_paths=[]
+excluded_path_types=['topnet']
+
+for node in preserve:
+    parent = node.parent()
+    parent_type = parent.type().name()
+    if parent not in cleanup_paths and parent_type not in excluded_path_types:
+        cleanup_paths += [parent]
+
+print 'cleanup_paths', cleanup_paths
+
+for path in cleanup_paths:
+    for node in path.children():
+        if node not in preserve:
+            node.destroy()]]></script>
+  </tool>
+</shelfDocument>

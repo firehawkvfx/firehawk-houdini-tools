@@ -1,3 +1,5 @@
+# This deadline pre task script is used in the deadline scheduler in TOPS.  it allows overwriting of the hip path to be loaded to optimise for remote locations.
+
 
 import os
 import sys

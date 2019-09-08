@@ -48,10 +48,10 @@ def __main__( *args ):
 
     # Evaluate it locallly to this machine
     hfs_env = RepositoryUtils.CheckPathMapping(hfs_env)
-    deadlinePlugin.LogInfo("checked path mapping")
+    # deadlinePlugin.LogInfo("checked path mapping")
     # Append Houdini bin and python2.7libs folders
     append_hlibs_to_sys(hfs_env)
-    deadlinePlugin.LogInfo("appended libs")
+    # deadlinePlugin.LogInfo("appended libs")
 
     # # Import PDG module (don't think there is a use for this but this should work)
     # try:
@@ -63,13 +63,13 @@ def __main__( *args ):
 
     # The task index (corresponds to the task file)
     startFrame = deadlinePlugin.GetStartFrame()
-    deadlinePlugin.LogInfo("got start frame")
+    # deadlinePlugin.LogInfo("got start frame")
 
     startupDir = deadlinePlugin.GetStartupDirectory()
 
     # The PDG job directory will contain the task file
     jobDir = deadlinePlugin.GetPluginInfoEntryWithDefault('PDGJobDirectory', '')
-    deadlinePlugin.LogInfo("got job dir")
+    # deadlinePlugin.LogInfo("got job dir")
     if not jobDir:
         deadlinePlugin.FailRender('PDGJobDirectory is not specified. Unable to get task file.')
 
@@ -91,19 +91,19 @@ def __main__( *args ):
     try:
         # Load the task file's data as json dict and process properties
 
-        deadlinePlugin.LogInfo('get json data')
+        # deadlinePlugin.LogInfo('get json data')
         json_obj = json.loads(line)
 
         
-        deadlinePlugin.LogInfo("Read json file: {}".format( str(taskFilePath) ) )
+        # deadlinePlugin.LogInfo("Read json file: {}".format( str(taskFilePath) ) )
 
         executable = RepositoryUtils.CheckPathMapping(json_obj['executable'].replace( "\"", "" ))
         arguments = RepositoryUtils.CheckPathMapping(json_obj['arguments'])
 
         # ### Alter work item command path ###
         command = arguments
-        deadlinePlugin.LogInfo('command:')  
-        deadlinePlugin.LogInfo(command)
+        # deadlinePlugin.LogInfo('command:')  
+        # deadlinePlugin.LogInfo(command)
 
         if '.hip' in command.lower():
             # if a hip file is referenced, ensure it reads from the optimised mount path.
@@ -139,10 +139,10 @@ def __main__( *args ):
             command = ' '.join(new_command_list)
             # #work_item.setCommand(command)
             deadlinePlugin.LogInfo('command updated:')  
-            deadlinePlugin.LogInfo(command)
+            # deadlinePlugin.LogInfo(command)
 
             json_obj['arguments'] = command
-            deadlinePlugin.LogInfo('Check path mapping: {}'.format(json_obj['arguments']))
+            # deadlinePlugin.LogInfo('Check path mapping: {}'.format(json_obj['arguments']))
 
             arguments = RepositoryUtils.CheckPathMapping(json_obj['arguments'])
 

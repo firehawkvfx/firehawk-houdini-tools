@@ -181,12 +181,13 @@ class submit():
                     print "cooking preflight", self.preflight_node.path()
 
                     def cook_done(event):
-                        print 'cook done'
-                        if self.preflight_status == 'cooking':
-                            print "event", event.node, event.message
-                            self.preflight_status == 'done'
+                        print 'preflight cook done'
+                        post_target = hou.node( self.preflight_node.cachedUserData('post_target') )
+
+                        if post_target:
+                            print "Cook next task after event", event.node, event.message
                             ### remove handler since the main job is about to execute, and we dont need this anymore. ###
-                            self.preflight_pdg_node.removeEventHandler(self.handler)
+                            self.preflight_node.setCachedUserData('post_target', '')
 
                             ### save after preflight ###
                             #hou.hipFile.save(self.submit_name)
@@ -204,14 +205,20 @@ class submit():
                             if timestamp_submission:
                                 hou.hipFile.save(self.hip_path)
                         else:
-                            print 'error preflight_status is not "cooking", this function should not be called', self.preflight_status
+                            print 'skipping post task.  no path defined'
 
                     print 'setup handler'
                     ### setup handler before executing preflight ###
                     self.preflight_pdg_node = self.preflight_node.getPDGNode()
-                    self.handler = self.preflight_pdg_node.addEventHandler(cook_done, pdg.EventType.CookComplete)
+
+                    post_target_path = self.preflight_node.cachedUserData('post_target')
+                    post_target = hou.node( post_target_path )
+                    if post_target_path is None:
+                        self.handler = self.preflight_pdg_node.addEventHandler(cook_done, pdg.EventType.CookComplete)
                     ### cook preflight ###
-                    self.preflight_status = 'cooking'
+                    # self.preflight_status = 'cooking'
+
+                    self.preflight_node.setCachedUserData('post_target', self.node.path())
                     self.preflight_node.getPDGNode().cook(False)
 
                 else:

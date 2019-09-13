@@ -75,6 +75,9 @@ def __main__( *args ):
     # in the mounted directory.
     # This file contains all the data to execute the work item.
     line = deadlinePlugin.WaitForCommandFile(taskFilePath, False, deadlinePlugin.taskFileTimeout)
+
+    deadlinePlugin.LogInfo('Found task file: {}'.format(taskFilePath))
+
     if not line:
         deadlinePlugin.FailRender('Task file not found at {}'.format(taskFilePath))
 
@@ -85,7 +88,7 @@ def __main__( *args ):
         # Load the task file's data as json dict and process properties
 
         json_obj = json.loads(line)
-
+        deadlinePlugin.LogInfo('loaded JSON OBJ')
         
         executable = RepositoryUtils.CheckPathMapping(json_obj['executable'].replace( "\"", "" ))
         arguments = RepositoryUtils.CheckPathMapping(json_obj['arguments'])
@@ -120,7 +123,7 @@ def __main__( *args ):
                 new_command_list.append(item)
             
             command = ' '.join(new_command_list)
-            deadlinePlugin.LogInfo('command updated:')  
+            deadlinePlugin.LogInfo('command updated:')
             json_obj['arguments'] = command
 
             arguments = RepositoryUtils.CheckPathMapping(json_obj['arguments'])

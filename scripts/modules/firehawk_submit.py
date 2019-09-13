@@ -219,6 +219,7 @@ class submit():
                     # self.preflight_status = 'cooking'
 
                     self.preflight_node.setCachedUserData('post_target', self.node.path())
+                    self.preflight_node.getPDGNode().dirty(True)
                     self.preflight_node.getPDGNode().cook(False)
 
                 else:

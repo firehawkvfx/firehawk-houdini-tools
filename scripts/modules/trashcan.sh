@@ -2,6 +2,7 @@
 
 # trash everything below the current path that does not have a .protect file in the folder.  it should normally only be run from the folder such as 'job/seq/shot/cache' to trash all data below this path.
 # see opmenu and firehawk_submit.py for tools to add protect files based on a top net tree for any given hip file.
+# after creating .protect files in cache paths you wish to keep, we would generally run this script in the root cache or render output path since it will create a trash can there.
 
 argument="$1"
 

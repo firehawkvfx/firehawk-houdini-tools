@@ -185,7 +185,7 @@ class submit():
                         post_target = hou.node( self.preflight_node.cachedUserData('post_target') )
 
                         if post_target:
-                            print "Cook next task after event", event.node, event.message
+                            print "Cook next task after preflight event", event.node, event.message
                             ### remove handler since the main job is about to execute, and we dont need this anymore. ###
                             self.preflight_node.setCachedUserData('post_target', '')
 

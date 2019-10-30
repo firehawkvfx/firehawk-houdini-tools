@@ -49,6 +49,8 @@ class submit():
 
         self.preflight_node = None
         self.preflight_path = None
+        self.post_target = None
+        self.post_target_path = None
         self.parm_group = None
         self.found_folder = None
         self.handler = None
@@ -102,7 +104,8 @@ class submit():
         }
 
     def assign_preflight(self):
-        print "assign preflight node", self.node.path(), "on topnet", self.parent
+        self.preflight_node = self.node
+        print "assign preflight node", self.preflight_node.path(), "on topnet", self.parent
 
         # get the template group for the parent top node.
         self.parm_group = self.parent.parmTemplateGroup()
@@ -128,7 +131,9 @@ class submit():
 
         # set values for path to preflight node.
 
-        self.parent.parm("preflight_node").set(self.node.path())
+        self.parent.parm("preflight_node").set(self.preflight_node.path())
+
+        #self.preflight_node.setUserData('post_target', self.preflight_node.path())
 
 
     def cook(self):
@@ -174,6 +179,10 @@ class submit():
 
             if self.preflight_node:
                 print "preflight node path is", self.preflight_node.path()
+                self.post_target_path = self.node.path()
+                self.preflight_node.setUserData('post_target', self.post_target_path)
+                print 'self.post_target_path set', self.post_target_path
+
                 ### refresh workitems on the preflight node ###
                 self.preflight_node.executeGraph(False, False, False, True)
 
@@ -182,21 +191,27 @@ class submit():
 
                     def cook_done(event):
                         print 'preflight cook done'
-                        post_target = hou.node( self.preflight_node.cachedUserData('post_target') )
-
-                        if post_target:
+                        self.post_target = hou.node( self.preflight_node.userData('post_target') )
+                        if self.post_target:
+                            print 'self.post_target_path check3', self.post_target.path()
                             print "Cook next task after preflight event", event.node, event.message
                             ### remove handler since the main job is about to execute, and we dont need this anymore. ###
-                            self.preflight_node.setCachedUserData('post_target', '')
+                            execute_node = self.post_target
+                            
+                            # when the post node is setup to execute, remove it from the var so it wont occur again.
+                            self.post_target = None
+                            self.preflight_node.setUserData('post_target', '')
 
                             ### save after preflight ###
                             #hou.hipFile.save(self.submit_name)
                             ### refresh workitems for main job node ###
-                            self.node.executeGraph(False, False, False, True)
+                            execute_node.executeGraph(False, False, False, True)
+                            #self.node.executeGraph(False, False, False, True)
 
                             if hasattr(self.node.getPDGNode(), 'cook'):
                                 ### cook main job ###
-                                self.node.getPDGNode().cook(False)
+                                #self.node.getPDGNode().cook(False)
+                                execute_node.getPDGNode().cook(False)
                             else:
                                 hou.ui.displayMessage(
                                     "Failed to cook, try initiliasing the node first with a standard cook / generate.")
@@ -204,21 +219,26 @@ class submit():
                             # Save again with restored original name.
                             if timestamp_submission:
                                 hou.hipFile.save(self.hip_path)
+
+                            #self.handler = None
                         else:
-                            print 'skipping post task.  no path defined'
+                            print 'skipping post task.  no post_target path defined in userData for preflight node.  this should have been removed upon completion of the last preflight task'
 
                     print 'setup handler'
                     ### setup handler before executing preflight ###
                     self.preflight_pdg_node = self.preflight_node.getPDGNode()
 
-                    post_target_path = self.preflight_node.cachedUserData('post_target')
-                    post_target = hou.node( post_target_path )
-                    if post_target_path is None:
+                    self.post_target_path = self.preflight_node.userData('post_target')
+                    print 'self.post_target_path', self.post_target_path
+                    self.post_target = hou.node( self.post_target_path )
+                    print 'self.post_target_path check2', self.post_target.path()
+                    if self.handler is None:
+                        print "Adding handler"
                         self.handler = self.preflight_pdg_node.addEventHandler(cook_done, pdg.EventType.CookComplete)
                     ### cook preflight ###
                     # self.preflight_status = 'cooking'
 
-                    self.preflight_node.setCachedUserData('post_target', self.node.path())
+                    
                     self.preflight_node.getPDGNode().dirty(True)
                     self.preflight_node.getPDGNode().cook(False)
 

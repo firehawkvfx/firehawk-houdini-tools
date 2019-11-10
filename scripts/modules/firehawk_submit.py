@@ -36,6 +36,9 @@ import errno
 import numpy as np
 import datetime
 
+# callbacks
+import hdefereval
+
 from shutil import copyfile
 
 #####    
@@ -189,6 +192,15 @@ class submit():
                 if hasattr(self.preflight_node.getPDGNode(), 'cook'):
                     print "cooking preflight", self.preflight_node.path()
 
+                    def defer_refresh(node):
+                        node.executeGraph(False, False, False, True)
+
+                    def defer_dirty(node):
+                        node.getPDGNode().dirty(True)
+
+                    def defer_cook(node):
+                        node.getPDGNode().cook(False)
+
                     def cook_done(event):
                         print 'preflight cook done'
                         self.post_target = hou.node( self.preflight_node.userData('post_target') )
@@ -205,13 +217,14 @@ class submit():
                             ### save after preflight ###
                             #hou.hipFile.save(self.submit_name)
                             ### refresh workitems for main job node ###
+
                             execute_node.executeGraph(False, False, False, True)
-                            #self.node.executeGraph(False, False, False, True)
+                            # hdefereval.executeDeferred(defer_refresh, execute_node)
 
                             if hasattr(self.node.getPDGNode(), 'cook'):
                                 ### cook main job ###
-                                #self.node.getPDGNode().cook(False)
-                                execute_node.getPDGNode().cook(False)
+                                # execute_node.getPDGNode().cook(False)
+                                hdefereval.executeDeferred(defer_cook, execute_node)
                             else:
                                 hou.ui.displayMessage(
                                     "Failed to cook, try initiliasing the node first with a standard cook / generate.")
@@ -236,11 +249,11 @@ class submit():
                         print "Adding handler"
                         self.handler = self.preflight_pdg_node.addEventHandler(cook_done, pdg.EventType.CookComplete)
                     ### cook preflight ###
-                    # self.preflight_status = 'cooking'
-
                     
-                    self.preflight_node.getPDGNode().dirty(True)
-                    self.preflight_node.getPDGNode().cook(False)
+                    # self.preflight_node.getPDGNode().dirty(True)
+                    # self.preflight_node.getPDGNode().cook(False)
+                    hdefereval.executeDeferred(defer_dirty, self.preflight_node)
+                    hdefereval.executeDeferred(defer_cook, self.preflight_node)
 
                 else:
                     #print "dir(self.preflight_node.getPDGNode())", dir(self.preflight_node.getPDGNode())

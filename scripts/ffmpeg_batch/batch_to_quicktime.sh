@@ -19,10 +19,10 @@ list () {
 
 convert () {
     echo 'converting files in background'
-    mkdir -p mp4
+    mkdir -p quicktime
     for file in "$args"$match ; do
         echo "convert ./$file"
-        ffmpeg -i "$file" -vcodec h264 -acodec aac -pix_fmt yuv420p "mp4/mp4_${file%.*}.mp4" </dev/null > /dev/null 2>&1 &
+        ffmpeg -i "$file" -vcodec h264 -acodec aac -pix_fmt yuv420p "quicktime/qt_${file%.*}.mp4" </dev/null > /dev/null 2>&1 &
         # this is used to background output to shell when threading multiple files - </dev/null > /dev/null 2>&1 &
     done
 }

@@ -17,7 +17,9 @@ from collections import namedtuple
 from distutils.spawn import find_executable
 from multiprocessing import cpu_count
 
-from pdg import createProcessJob, scheduleResult
+import pdg
+from pdg import scheduleResult
+# from pdg import createProcessJob, scheduleResult
 from pdg.job.callbackserver import CallbackServerMixin
 from pdg.scheduler import PyScheduler, convertEnvMapToUTF8
 from pdg.staticcook import StaticCookMixin
@@ -37,7 +39,8 @@ import numpy as np
 import datetime
 
 # callbacks
-import hdefereval
+if hou.isUIAvailable():
+    import hdefereval
 
 from shutil import copyfile
 

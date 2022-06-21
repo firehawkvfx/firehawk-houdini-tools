@@ -1,7 +1,7 @@
 {
     "env" : [
         {
-            "FIREHAWK_HOUDINI_TOOLS" : "$HOUDINI_PACKAGE_PATH/openfirehawk-houdini-tools"
+            "FIREHAWK_HOUDINI_TOOLS" : "$HOUDINI_PACKAGE_PATH/firehawk-houdini-tools"
         },
         {
             "HOUDINI_SCRIPT_PATH" : {

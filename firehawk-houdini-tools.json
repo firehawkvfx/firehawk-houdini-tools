@@ -1,0 +1,31 @@
+{
+    "env" : [
+        {
+            "FIREHAWK_HOUDINI_TOOLS" : "$HOUDINI_PACKAGE_PATH/openfirehawk-houdini-tools"
+        },
+        {
+            "HOUDINI_SCRIPT_PATH" : {
+                "method" : "prepend",
+                "value" : ["$FIREHAWK_HOUDINI_TOOLS"]
+            }
+        },
+        {
+            "HOUDINI_PATH" : {
+                "method" : "prepend",
+                "value" : ["$FIREHAWK_HOUDINI_TOOLS"]
+            }
+        },
+        {
+            "HOUDINI_MENU_PATH" : {
+                "method" : "prepend",
+                "value" : ["$FIREHAWK_HOUDINI_TOOLS/scripts/menus"]
+            }
+        },
+        {
+            "HOUDINI_OTLSCAN_PATH" : {
+                "method" : "prepend",
+                "value" : ["$FIREHAWK_HOUDINI_TOOLS/hda"]
+            }
+        }
+    ]
+}
